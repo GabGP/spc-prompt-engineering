@@ -22,31 +22,43 @@ def build_parser() -> argparse.ArgumentParser:
         description="Execute single-page LLM transformation, inspection gate, and telemetry logging",
         formatter_class=formatter,
     )
-    run_parser.add_argument(
-        "-p", "--page", metavar="PATH", help="Input page PDF/text [default: auto-detect next]"
+    g_input = run_parser.add_argument_group("input & backlog")
+    g_input.add_argument(
+        "-p", "--page", metavar="PATH", help="Input document page PDF/text [default: auto-detect next]"
     )
-    run_parser.add_argument(
-        "-r", "--run-id", metavar="ID", type=int, help="Run ID override [default: next in CSV]"
+    g_input.add_argument(
+        "-r", "--run-id", metavar="ID", type=int, help="Sequential run ID override [default: next in CSV]"
     )
-    run_parser.add_argument(
-        "--phase", metavar="NAME", help="Phase override (e.g. Phase_I, Phase_II)"
+
+    g_exp = run_parser.add_argument_group("experimental factors")
+    g_exp.add_argument(
+        "--phase", metavar="NAME", help="Phase override: Phase_I, Phase_II, Phase_III [default: calendar-resolved]"
     )
-    run_parser.add_argument(
-        "--reworks", metavar="N", type=int, default=3, help="Max rework attempts [default: 3]"
+    g_exp.add_argument(
+        "--math", dest="math", action="store_true", default=None,
+        help="Force formula presence (bypasses auto-detection)",
     )
-    run_parser.add_argument(
-        "--cause", metavar="TEXT", default="NONE", help="Special cause note [default: NONE]"
+    g_exp.add_argument(
+        "--no-math", dest="math", action="store_false", default=None,
+        help="Force formula absence: requires 'NONE RECORDED' (bypasses auto-detection)",
     )
-    run_parser.add_argument(
-        "--math", action="store_true", help="Flag if input contains analytical formulas"
+
+    g_gate = run_parser.add_argument_group("quality gate & process control")
+    g_gate.add_argument(
+        "--reworks", metavar="N", type=int, default=3, help="Max rework reflection attempts [default: 3]"
     )
-    run_parser.add_argument(
+    g_gate.add_argument(
+        "--cause", metavar="TEXT", default="NONE", help="Special cause note for assignable variation [default: NONE]"
+    )
+
+    g_sim = run_parser.add_argument_group("offline simulation")
+    g_sim.add_argument(
         "--mock",
         nargs="?",
         const="rework",
         default=None,
         choices=["rework", "pass", "fail", "latex", "empty_math"],
-        help="Simulate run offline with staged responses [default: rework]",
+        help="Execute offline without API key using staged responses [default: rework]",
     )
     run_parser.set_defaults(func=handle_run)
 

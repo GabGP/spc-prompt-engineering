@@ -39,7 +39,7 @@ def render_header(
         f"[bold]Operator:[/bold]   {operator:<20} [bold]Phase:[/bold] {PHASE_DESCRIPTIONS.get(phase, phase)}\n"
         f"[bold]Target Run:[/bold] #{run_id:03d}{'':<16} [bold]Input:[/bold] {input_file}\n"
         f"[bold]Factor X1:[/bold]  {x1_desc:<20} [bold]Factor X2:[/bold] {x2_desc}\n"
-        f"[bold]WIP Buffer:[/bold] {turn_count} turns stored in session cache"
+        f"[bold]WIP Buffer:[/bold] {turn_count} turns in cache (~{turn_count * 260:,} context tokens)"
     )
     c.print(Panel(content, title=Text("SPC TRANSFORMATION ENGINE", style="bold cyan"), border_style="cyan"))
 
@@ -109,11 +109,12 @@ def render_status_dashboard(
     table.add_row("Factor X2 (Prompt Schema)", x2_desc)
     table.add_row("Total Runs Completed", str(total_runs))
     table.add_row("Next Target Run ID", f"#{next_run_id:03d}")
-    table.add_row("Active Cache Turns", f"{turn_count} turns stored")
+    table.add_row("Active Cache Turns", f"{turn_count} turns (~{turn_count * 260:,} tokens)")
 
     if last_run:
+        f_name = f" ({last_run.get('input_file')})" if last_run.get("input_file") else ""
         summary = (
-            f"Run #{last_run.get('run_id')} | {last_run.get('phase')} | "
+            f"Run #{last_run.get('run_id')}{f_name} | {last_run.get('phase')} | "
             f"T={last_run.get('cycle_time_sec')}s | "
             f"Conforming={last_run.get('conforming')} | P={last_run.get('rework_cycles')}"
         )

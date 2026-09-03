@@ -19,6 +19,7 @@ from src.state.phase_resolver import resolve_phase
 from src.state.run_tracker import RunTracker
 from src.state.session_manager import SessionManager
 from src.ui.slice_handler import handle_slice
+from src.validation.rules import detect_math_in_text
 from src.ui.views import (
     default_console,
     render_execution_summary,
@@ -64,7 +65,9 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
         factor_x1=res.factor_x1, factor_x2=res.factor_x2,
         turn_count=turn_count, console=c,
     )
-    c.print(f"  [1/3] Slicing & Input Verification ... [green]OK[/green] ({word_count} words)")
+    has_math = args.math if getattr(args, "math", None) is not None else detect_math_in_text(page_text)
+    math_lbl = "detected" if has_math else "none (NONE RECORDED expected)"
+    c.print(f"  [1/3] Slicing & Input Verification ... [green]OK[/green] ({word_count} words, formulas: {math_lbl})")
 
     def notify_rework(n: int, r: DefectReport, _: str) -> None:
         reasons = ", ".join(r.defect_reasons)
@@ -83,7 +86,7 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
         run_id=run_id, page_text=page_text, input_filename=input_path.name,
         phase=res.phase.value, factor_x1=res.factor_x1, factor_x2=res.factor_x2,
         operator=settings.operator_name, max_reworks=args.reworks,
-        assignable_cause=args.cause, has_math_in_input=args.math,
+        assignable_cause=args.cause, has_math_in_input=has_math,
         on_rework=notify_rework,
     )
 
