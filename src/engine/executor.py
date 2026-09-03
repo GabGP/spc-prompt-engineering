@@ -10,7 +10,9 @@ from src.engine.gemini_client import GeminiClient
 from src.persistence.audit_logger import AuditLogger
 from src.persistence.csv_logger import CSVLogger
 from src.persistence.webhook_client import WebhookClient
-from src.prompts.loader import build_prompt, format_rework_prompt
+from src.prompts.loader import (
+    build_prompt, format_rework_prompt, load_bare_prompt, load_memory_context,
+)
 from src.state.session_manager import SessionManager
 from src.validation.inspector import QualityInspector
 
@@ -19,13 +21,9 @@ class TransformationExecutor:
     """Orchestrates transformation, timing, quality gates, and persistence."""
 
     def __init__(
-        self,
-        gemini_client: GeminiClient,
-        inspector: QualityInspector | None = None,
-        session_manager: SessionManager | None = None,
-        csv_logger: CSVLogger | None = None,
-        audit_logger: AuditLogger | None = None,
-        webhook_client: WebhookClient | None = None,
+        self, gemini_client: GeminiClient, inspector: QualityInspector | None = None,
+        session_manager: SessionManager | None = None, csv_logger: CSVLogger | None = None,
+        audit_logger: AuditLogger | None = None, webhook_client: WebhookClient | None = None,
     ) -> None:
         self.gemini_client = gemini_client
         self.inspector = inspector or QualityInspector()
@@ -33,6 +31,14 @@ class TransformationExecutor:
         self.csv_logger = csv_logger or CSVLogger()
         self.audit_logger = audit_logger or AuditLogger()
         self.webhook_client = webhook_client or WebhookClient()
+
+    def _count_tokens(self, contents: Any) -> int:
+        fn = getattr(self.gemini_client, "count_tokens", None)
+        if callable(fn):
+            res = fn(contents)
+            if isinstance(res, (int, float, str)):
+                return int(res)
+        return 0
 
     def execute_run(
         self,
@@ -52,18 +58,17 @@ class TransformationExecutor:
         history = self.session_manager.load_history(factor_x1)
         chat = self.gemini_client.create_chat(raw_history=history)
         prompt = build_prompt(factor_x2, page_text)
+        tpl = f"{load_memory_context()}\n\n---\n\n{load_bare_prompt()}" if factor_x2 == 1 else load_bare_prompt()
 
-        cnt_fn = getattr(self.gemini_client, "count_tokens", None)
-        ctx_tokens = int(cnt_fn(history)) if callable(cnt_fn) and history else 0
-        page_tokens = int(cnt_fn(prompt)) if callable(cnt_fn) else 0
+        ctx_tokens = self._count_tokens(history) if history and factor_x1 == 0 else 0
+        instruction_tokens = self._count_tokens(tpl)
+        page_tokens = self._count_tokens(page_text)
 
         start_time = time.perf_counter()
         current_text, tokens = self.gemini_client.send_prompt(chat, prompt)
         p_tokens, o_tokens = tokens["prompt_tokens"], tokens["output_tokens"]
-        if ctx_tokens == 0 and factor_x1 == 0 and history:
-            ctx_tokens = max(0, p_tokens - page_tokens)
-        if page_tokens == 0:
-            page_tokens = max(0, p_tokens - ctx_tokens)
+        finish_reason = str(tokens.get("finish_reason", "STOP"))
+        model_ver = str(tokens.get("model_version", getattr(self.gemini_client, "model_name", "gemini-2.5-flash")))
 
         defect_report = self.inspector.inspect(
             current_text, has_math_in_input=has_math_in_input
@@ -84,6 +89,7 @@ class TransformationExecutor:
             )
             p_tokens = r_tokens["prompt_tokens"]
             o_tokens += r_tokens["output_tokens"]
+            finish_reason = str(r_tokens.get("finish_reason", finish_reason))
             defect_report = self.inspector.inspect(
                 current_text, has_math_in_input=has_math_in_input
             )
@@ -98,16 +104,20 @@ class TransformationExecutor:
         ]
         self.session_manager.save_history(history + clean_turn, factor_x1)
 
+        framing_tokens = max(0, p_tokens - (ctx_tokens + instruction_tokens + page_tokens))
         total_tokens = p_tokens + o_tokens
+        cause = f"API_{finish_reason}" if finish_reason != "STOP" and assignable_cause == "NONE" else assignable_cause
+
         record = RunRecord(
-            timestamp=datetime.now(UTC), run_id=run_id, input_file=input_filename,
-            phase=phase, factor_x1=factor_x1, factor_x2=factor_x2,
-            cycle_time_sec=cycle_time, context_tokens=ctx_tokens,
-            page_tokens=page_tokens, prompt_tokens=p_tokens,
+            run_id=run_id, timestamp=datetime.now(UTC), phase=phase,
+            operator=operator, model_version=model_ver, input_file=input_filename,
+            factor_x1=factor_x1, factor_x2=factor_x2, context_tokens=ctx_tokens,
+            instruction_tokens=instruction_tokens, page_tokens=page_tokens,
+            framing_tokens=framing_tokens, prompt_tokens=p_tokens,
             output_tokens=o_tokens, total_tokens=total_tokens,
             conforming=1 if defect_report.is_conforming else 0,
-            rework_cycles=rework_count, assignable_cause=assignable_cause,
-            operator=operator,
+            rework_cycles=rework_count, finish_reason=finish_reason,
+            cycle_time_sec=cycle_time, assignable_cause=cause,
         )
 
         audit = AuditPayload(
@@ -117,9 +127,11 @@ class TransformationExecutor:
             rework_count=rework_count, conforming=defect_report.is_conforming,
             inspection_events=events,
             raw_usage_metadata={
-                "context_tokens": ctx_tokens, "page_tokens": page_tokens,
+                "context_tokens": ctx_tokens, "instruction_tokens": instruction_tokens,
+                "page_tokens": page_tokens, "framing_tokens": framing_tokens,
                 "prompt_tokens": p_tokens, "output_tokens": o_tokens,
-                "total_tokens": total_tokens,
+                "total_tokens": total_tokens, "finish_reason": finish_reason,
+                "model_version": model_ver,
             },
         )
 

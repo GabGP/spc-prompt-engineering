@@ -14,11 +14,15 @@ def test_extract_token_metadata_missing_usage() -> None:
         "prompt_tokens": 0,
         "output_tokens": 0,
         "total_tokens": 0,
+        "finish_reason": "STOP",
+        "model_version": "",
     }
     assert extract_token_metadata(SimpleNamespace()) == {
         "prompt_tokens": 0,
         "output_tokens": 0,
         "total_tokens": 0,
+        "finish_reason": "STOP",
+        "model_version": "",
     }
 
 
@@ -34,6 +38,31 @@ def test_extract_token_metadata_present() -> None:
     assert tokens["prompt_tokens"] == 250
     assert tokens["output_tokens"] == 120
     assert tokens["total_tokens"] == 370
+
+
+def test_extract_token_metadata_with_candidates_and_model_version() -> None:
+    """Verify extraction of finish_reason and model_version when candidates present."""
+    usage = SimpleNamespace(
+        prompt_token_count=100,
+        candidates_token_count=50,
+        total_token_count=150,
+    )
+    candidate = SimpleNamespace(finish_reason="MAX_TOKENS")
+    resp = SimpleNamespace(
+        usage_metadata=usage,
+        candidates=[candidate],
+        model_version="gemini-2.5-flash-001",
+    )
+    tokens = extract_token_metadata(resp)
+    assert tokens["finish_reason"] == "MAX_TOKENS"
+    assert tokens["model_version"] == "gemini-2.5-flash-001"
+
+    enum_reason = SimpleNamespace(name="SAFETY")
+    resp_enum = SimpleNamespace(
+        usage_metadata=usage,
+        candidates=[SimpleNamespace(finish_reason=enum_reason)],
+    )
+    assert extract_token_metadata(resp_enum)["finish_reason"] == "SAFETY"
 
 
 def test_extract_token_metadata_computes_total_if_zero() -> None:

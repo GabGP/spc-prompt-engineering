@@ -6,20 +6,27 @@ from google import genai
 from google.genai import types
 
 
-def extract_token_metadata(response: Any) -> dict[str, int]:
-    """Extract prompt, candidate, and total token usage counts from response."""
+def extract_token_metadata(response: Any) -> dict[str, Any]:
+    """Extract prompt, candidate, total token usage counts, and finish reason from response."""
     usage = getattr(response, "usage_metadata", None)
-    if usage is None:
-        return {"prompt_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    prompt = getattr(usage, "prompt_token_count", 0) or 0 if usage else 0
+    output = getattr(usage, "candidates_token_count", 0) or 0 if usage else 0
+    total = getattr(usage, "total_token_count", 0) or (prompt + output) if usage else 0
 
-    prompt = getattr(usage, "prompt_token_count", 0) or 0
-    output = getattr(usage, "candidates_token_count", 0) or 0
-    total = getattr(usage, "total_token_count", 0) or (prompt + output)
+    finish_reason = "STOP"
+    candidates = getattr(response, "candidates", None)
+    if candidates and len(candidates) > 0:
+        raw_reason = getattr(candidates[0], "finish_reason", "STOP")
+        finish_reason = str(getattr(raw_reason, "name", raw_reason)) or "STOP"
+
+    model_version = str(getattr(response, "model_version", "") or "")
 
     return {
         "prompt_tokens": prompt,
         "output_tokens": output,
         "total_tokens": total,
+        "finish_reason": finish_reason,
+        "model_version": model_version,
     }
 
 
@@ -52,11 +59,13 @@ class GeminiClient:
             history=history_arg,
         )
 
-    def send_prompt(self, chat: Any, prompt: str) -> tuple[str, dict[str, int]]:
+    def send_prompt(self, chat: Any, prompt: str) -> tuple[str, dict[str, Any]]:
         """Send a prompt through an active chat session; return emitted text and tokens."""
         response = chat.send_message(prompt)
         text = getattr(response, "text", "") or ""
         tokens = extract_token_metadata(response)
+        if not tokens.get("model_version"):
+            tokens["model_version"] = self.model_name
         return text, tokens
 
     def count_tokens(self, contents: Any) -> int:

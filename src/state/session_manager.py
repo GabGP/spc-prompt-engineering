@@ -104,7 +104,8 @@ class SessionManager:
             try:
                 data = json.loads(file.read_text(encoding="utf-8"))
                 if isinstance(data, dict) and data.get("phase") == phase:
-                    run_id = int(data.get("run_id", 0))
+                    raw_id = data.get("run_id", 0)
+                    run_id = int(raw_id) if isinstance(raw_id, (int, float, str)) else 0
                     entries.append((run_id, data))
             except (json.JSONDecodeError, OSError, ValueError):
                 continue

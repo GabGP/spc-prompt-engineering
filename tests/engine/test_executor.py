@@ -189,8 +189,12 @@ def test_executor_token_fallback_calculation(tmp_path: Path) -> None:
         factor_x1=0,
         factor_x2=0,
         operator="analyst",
+        has_math_in_input=True,
     )
 
     assert result.record.prompt_tokens == 500
-    assert result.record.context_tokens == 500
+    assert result.record.context_tokens == 0
     assert result.record.page_tokens == 0
+    assert result.record.framing_tokens == 500
+    assert result.record.instruction_tokens == 0
+    assert result.record.total_tokens == 650

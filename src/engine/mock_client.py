@@ -23,9 +23,18 @@ class MockUsageMetadata:
 class MockResponse:
     """Mock LLM response payload."""
 
-    def __init__(self, text: str, prompt_tokens: int, output_tokens: int) -> None:
+    def __init__(
+        self,
+        text: str,
+        prompt_tokens: int,
+        output_tokens: int,
+        finish_reason: str = "STOP",
+        model_version: str = "gemini-2.5-flash-mock",
+    ) -> None:
         self.text = text
         self.usage_metadata = MockUsageMetadata(prompt_tokens, output_tokens)
+        self.finish_reason = finish_reason
+        self.model_version = model_version
 
 
 class MockGeminiChat:
@@ -94,13 +103,15 @@ class MockGeminiClient:
         """Create mock chat instance with simulated history."""
         return MockGeminiChat(scenario=self.scenario, raw_history=raw_history)
 
-    def send_prompt(self, chat: Any, prompt: str) -> tuple[str, dict[str, int]]:
+    def send_prompt(self, chat: Any, prompt: str) -> tuple[str, dict[str, Any]]:
         """Dispatch prompt through mock chat session and extract simulated tokens."""
         response = chat.send_message(prompt)
         tokens = {
             "prompt_tokens": response.usage_metadata.prompt_token_count,
             "output_tokens": response.usage_metadata.candidates_token_count,
             "total_tokens": response.usage_metadata.total_token_count,
+            "finish_reason": getattr(response, "finish_reason", "STOP"),
+            "model_version": getattr(response, "model_version", self.model_name),
         }
         return response.text, tokens
 
