@@ -2,6 +2,7 @@
 
 from src.ui.cli import app
 from src.ui.handlers import handle_run, handle_slice, handle_status
+from src.ui.progress import create_slice_progress
 from src.ui.views import (
     render_execution_summary,
     render_header,
@@ -12,6 +13,7 @@ from src.ui.views import (
 
 __all__ = [
     "app",
+    "create_slice_progress",
     "handle_run",
     "handle_slice",
     "handle_status",

@@ -16,6 +16,7 @@ from src.persistence.webhook_client import WebhookClient
 from src.state.phase_resolver import resolve_phase
 from src.state.run_tracker import RunTracker
 from src.state.session_manager import SessionManager
+from src.ui.progress import create_slice_progress
 from src.ui.views import (
     default_console,
     render_execution_summary,
@@ -120,11 +121,21 @@ def handle_slice(args: argparse.Namespace, console: Console | None = None) -> in
         return 1
 
     start_idx = 1 if getattr(args, "sequential", False) else getattr(args, "start_index", None)
+    total_pages = max(0, args.end - args.start + 1)
     try:
-        files = slicer.slice_range(
-            src_pdf=src, start_page=args.start, end_page=args.end,
-            output_dir=args.output_dir, start_index=start_idx,
-        )
+        with create_slice_progress(console=c) as progress:
+            task = progress.add_task(
+                f"Slicing {src.name} [p.{args.start}-{args.end}]",
+                total=total_pages,
+            )
+            files = slicer.slice_range(
+                src_pdf=src,
+                start_page=args.start,
+                end_page=args.end,
+                output_dir=args.output_dir,
+                start_index=start_idx,
+                on_progress=lambda cur, tot, _: progress.update(task, completed=cur),
+            )
         render_slice_summary(
             src.name, args.start, args.end, args.output_dir, files, console=c
         )

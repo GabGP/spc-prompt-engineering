@@ -154,3 +154,31 @@ def test_slice_range_with_start_index(tmp_path: Path) -> None:
     assert len(files) == 3
     assert [f.name for f in files] == ["page_001.pdf", "page_002.pdf", "page_003.pdf"]
     assert (out_dir / "page_001.pdf").exists()
+
+
+def test_slice_range_on_progress_and_out_of_bounds(tmp_path: Path) -> None:
+    """Verify on_progress callback fires and out of range raises IndexError."""
+    src = make_test_pdf(tmp_path / "book.pdf", page_count=3)
+    out_dir = tmp_path / "inputs"
+    slicer = PDFSlicer()
+
+    calls: list[tuple[int, int, Path]] = []
+    files = slicer.slice_range(
+        src,
+        start_page=1,
+        end_page=2,
+        output_dir=out_dir,
+        on_progress=lambda cur, tot, p: calls.append((cur, tot, p)),
+    )
+    assert len(files) == 2
+    assert len(calls) == 2
+    assert calls[0][0] == 1 and calls[0][1] == 2
+    assert calls[1][0] == 2 and calls[1][1] == 2
+
+    # Out of range error: end_page exceeds total_pages
+    with pytest.raises(IndexError, match="out of range"):
+        slicer.slice_range(src, start_page=1, end_page=10, output_dir=out_dir)
+
+    # Missing file error
+    with pytest.raises(FileNotFoundError):
+        slicer.slice_range(tmp_path / "missing.pdf", 1, 2, out_dir)

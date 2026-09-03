@@ -1,11 +1,14 @@
 """Extracts individual pages from textbook PDFs and evaluates text density."""
 
+from collections.abc import Callable
 import logging
 from pathlib import Path
 
 import pypdf
 
 logging.getLogger("pypdf").setLevel(logging.ERROR)
+
+ProgressCallback = Callable[[int, int, Path], None]
 
 
 class PDFSlicer:
@@ -16,16 +19,20 @@ class PDFSlicer:
         self.max_words = max_words
 
     def slice_page(
-        self, src_pdf: Path | str, page_number: int, output_pdf: Path | str
+        self,
+        src_pdf: Path | str,
+        page_number: int,
+        output_pdf: Path | str,
+        reader: pypdf.PdfReader | None = None,
     ) -> Path:
         """Extract a single 1-indexed page from a source PDF and save to disk."""
         src_path = Path(src_pdf)
-        if not src_path.exists():
-            raise FileNotFoundError(f"Source PDF not found: {src_path}")
+        if reader is None:
+            if not src_path.exists():
+                raise FileNotFoundError(f"Source PDF not found: {src_path}")
+            reader = pypdf.PdfReader(str(src_path))
 
-        reader = pypdf.PdfReader(str(src_path))
         total_pages = len(reader.pages)
-
         if page_number < 1 or page_number > total_pages:
             raise IndexError(
                 f"Page {page_number} out of range (PDF contains {total_pages} pages)"
@@ -76,6 +83,7 @@ class PDFSlicer:
         end_page: int,
         output_dir: Path | str,
         start_index: int | None = None,
+        on_progress: ProgressCallback | None = None,
     ) -> list[Path]:
         """Slice a range of pages [start_page, end_page] into individual files."""
         if start_page > end_page:
@@ -83,13 +91,28 @@ class PDFSlicer:
                 f"start_page ({start_page}) cannot exceed end_page ({end_page})"
             )
 
+        src_path = Path(src_pdf)
+        if not src_path.exists():
+            raise FileNotFoundError(f"Source PDF not found: {src_path}")
+
+        reader = pypdf.PdfReader(str(src_path))
+        total_pages = len(reader.pages)
+        if start_page < 1 or end_page > total_pages:
+            bad_page = start_page if start_page < 1 else end_page
+            raise IndexError(
+                f"Page {bad_page} out of range (PDF contains {total_pages} pages)"
+            )
+
         out_dir = Path(output_dir)
         sliced_files: list[Path] = []
+        total_count = end_page - start_page + 1
 
         for offset, page in enumerate(range(start_page, end_page + 1)):
             idx = (start_index + offset) if start_index is not None else page
             target = out_dir / f"page_{idx:03d}.pdf"
-            self.slice_page(src_pdf, page, target)
+            self.slice_page(src_path, page, target, reader=reader)
             sliced_files.append(target)
+            if on_progress:
+                on_progress(offset + 1, total_count, target)
 
         return sliced_files
