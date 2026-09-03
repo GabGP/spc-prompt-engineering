@@ -165,3 +165,6 @@ def test_render_slice_summary(tmp_path: Path) -> None:
     assert "PDF Slicing Operation Complete" in output
     assert "book.pdf" in output
     assert "page_001.pdf" in output
+
+
+

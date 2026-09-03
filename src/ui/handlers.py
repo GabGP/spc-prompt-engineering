@@ -2,6 +2,7 @@
 
 import argparse
 
+from google.genai.errors import APIError
 from rich.console import Console
 
 from src.config import Settings
@@ -17,6 +18,7 @@ from src.persistence.webhook_client import WebhookClient
 from src.state.phase_resolver import resolve_phase
 from src.state.run_tracker import RunTracker
 from src.state.session_manager import SessionManager
+from src.ui.error_view import render_api_error
 from src.ui.slice_handler import handle_slice
 from src.ui.views import (
     default_console,
@@ -83,13 +85,17 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
     mock_tag = f" (Offline Mock: {args.mock})" if getattr(args, "mock", None) else ""
     c.print(f"  [2/3] Dispatching to Gemini Engine ...{mock_tag}")
 
-    result = executor.execute_run(
-        run_id=run_id, page_text=page_text, input_filename=input_path.name,
-        phase=res.phase.value, factor_x1=res.factor_x1, factor_x2=res.factor_x2,
-        operator=settings.operator_name, max_reworks=args.reworks,
-        assignable_cause=args.cause, has_math_in_input=has_math,
-        on_rework=notify_rework,
-    )
+    try:
+        result = executor.execute_run(
+            run_id=run_id, page_text=page_text, input_filename=input_path.name,
+            phase=res.phase.value, factor_x1=res.factor_x1, factor_x2=res.factor_x2,
+            operator=settings.operator_name, max_reworks=args.reworks,
+            assignable_cause=args.cause, has_math_in_input=has_math,
+            on_rework=notify_rework,
+        )
+    except (APIError, RuntimeError, OSError, ValueError) as err:
+        render_api_error(err, console=c)
+        return 1
 
     c.print(
         f"  [2/3] Engine Finished ... [green]DONE[/green] "

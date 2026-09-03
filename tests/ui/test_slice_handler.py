@@ -37,3 +37,18 @@ def test_handle_slice_range_error(tmp_path: Path, monkeypatch) -> None:
         ["slice", "-b", str(pdf_path), "-s", "5", "-e", "10", "-o", str(tmp_path / "out")]
     )
     assert handle_slice(args_err) == 1
+
+
+def test_handle_slice_sequential(tmp_path: Path, monkeypatch) -> None:
+    """Verify handle_slice honors --sequential and --start-index flags."""
+    monkeypatch.chdir(tmp_path)
+    pdf_path = make_test_pdf(tmp_path / "book.pdf", page_count=3)
+    out_dir = tmp_path / "out"
+    parser = build_parser()
+    args = parser.parse_args(
+        ["slice", "-b", str(pdf_path), "-s", "2", "-e", "3", "-o", str(out_dir), "--sequential"]
+    )
+    assert handle_slice(args) == 0
+    assert (out_dir / "page_001.pdf").exists()
+    assert (out_dir / "page_002.pdf").exists()
+

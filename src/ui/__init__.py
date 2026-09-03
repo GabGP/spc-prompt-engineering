@@ -1,6 +1,7 @@
 """UI package: Rich terminal presentation views, CLI handlers, and routing."""
 
 from src.ui.cli import app
+from src.ui.error_view import render_api_error
 from src.ui.handlers import (
     handle_rebuild_cache,
     handle_run,
@@ -23,9 +24,11 @@ __all__ = [
     "handle_run",
     "handle_slice",
     "handle_status",
+    "render_api_error",
     "render_execution_summary",
     "render_header",
     "render_inspection_gate",
     "render_slice_summary",
     "render_status_dashboard",
 ]
+

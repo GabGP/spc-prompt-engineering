@@ -136,3 +136,5 @@ def render_slice_summary(
         sample = f"{created_files[0].name} ... {created_files[-1].name}"
         table.add_row("Sliced Artifacts", f"{sample} ({len(created_files)} files)")
     c.print(table)
+
+

@@ -251,22 +251,6 @@ def test_handle_run_auto_discovers_in_order(tmp_path: Path, monkeypatch) -> None
         assert mock_exec.call_args.kwargs["input_filename"] == "page_002.txt"
 
 
-def test_handle_slice_sequential(tmp_path: Path, monkeypatch) -> None:
-    """Verify handle_slice honors --sequential and --start-index flags."""
-    monkeypatch.chdir(tmp_path)
-    from tests.ingestion.test_pdf_slicer import make_test_pdf
-
-    pdf_path = make_test_pdf(tmp_path / "book.pdf", page_count=3)
-    out_dir = tmp_path / "out"
-    parser = build_parser()
-    args = parser.parse_args(
-        ["slice", "-b", str(pdf_path), "-s", "2", "-e", "3", "-o", str(out_dir), "--sequential"]
-    )
-    assert handle_slice(args) == 0
-    assert (out_dir / "page_001.pdf").exists()
-    assert (out_dir / "page_002.pdf").exists()
-
-
 def test_handle_run_with_mock_rework(tmp_path: Path, monkeypatch) -> None:
     """Verify handle_run executes offline with staged mock rework scenario."""
     monkeypatch.chdir(tmp_path)
@@ -280,4 +264,22 @@ def test_handle_run_with_mock_rework(tmp_path: Path, monkeypatch) -> None:
     assert (tmp_path / "data" / "main_event_log.csv").exists()
     assert (tmp_path / "data" / "logs" / "run_001_audit.json").exists()
     assert (tmp_path / "data" / "outputs" / "run_001.md").exists()
+
+
+def test_handle_run_api_error_returns_one(tmp_path: Path, monkeypatch) -> None:
+    """Verify handle_run catches execution errors, renders error card, and returns 1."""
+    monkeypatch.chdir(tmp_path)
+    in_dir = tmp_path / "data" / "inputs"
+    in_dir.mkdir(parents=True)
+    (in_dir / "page_001.txt").write_text("Sample input text", encoding="utf-8")
+
+    parser = build_parser()
+    args = parser.parse_args(["run", "--mock", "pass", "--phase", "Phase_I"])
+
+    with patch(
+        "src.ui.handlers.TransformationExecutor.execute_run",
+        side_effect=RuntimeError("503 UNAVAILABLE: Model overloaded"),
+    ):
+        assert handle_run(args) == 1
+
 
