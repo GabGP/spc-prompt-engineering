@@ -35,6 +35,11 @@ packages = ["src/spc"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "--cov=spc --cov-report=term-missing"
+cache_dir = ".cache/pytest"
+addopts = "--cov=spc --cov-report=term-missing --cov-fail-under=80"
+
+[tool.coverage.run]
+data_file = ".cache/coverage/.coverage"
+
 
 
