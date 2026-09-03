@@ -20,26 +20,19 @@ PHASE_DESCRIPTIONS: dict[str, str] = {
 
 
 def render_header(
-    operator: str,
-    phase: str,
-    run_id: int,
-    input_file: str,
-    factor_x1: int,
-    factor_x2: int,
-    turn_count: int = 0,
-    console: Console | None = None,
+    operator: str, phase: str, run_id: int, input_file: str,
+    factor_x1: int, factor_x2: int, turn_count: int = 0,
+    context_tokens: int = 0, console: Console | None = None,
 ) -> None:
     """Render standardized SPC operational banner and parameters."""
     c = console or default_console
     x1_desc = "1 (Daily Reset)" if factor_x1 else "0 (Accumulating Buffer)"
-    x2_desc = (
-        "1 (SOP Schema Injection)" if factor_x2 else "0 (Bare / Ad-Hoc Prompt)"
-    )
+    x2_desc = "1 (SOP Schema Injection)" if factor_x2 else "0 (Bare / Ad-Hoc Prompt)"
     content = (
         f"[bold]Operator:[/bold]   {operator:<20} [bold]Phase:[/bold] {PHASE_DESCRIPTIONS.get(phase, phase)}\n"
         f"[bold]Target Run:[/bold] #{run_id:03d}{'':<16} [bold]Input:[/bold] {input_file}\n"
         f"[bold]Factor X1:[/bold]  {x1_desc:<20} [bold]Factor X2:[/bold] {x2_desc}\n"
-        f"[bold]WIP Buffer:[/bold] {turn_count} turns in cache (~{turn_count * 260:,} context tokens)"
+        f"[bold]WIP Buffer:[/bold] {turn_count} turns in cache ({context_tokens:,} context tokens)"
     )
     c.print(Panel(content, title=Text("SPC TRANSFORMATION ENGINE", style="bold cyan"), border_style="cyan"))
 
@@ -60,9 +53,7 @@ def render_inspection_gate(
 
 
 def render_execution_summary(
-    result: ExecutionResult,
-    cloud_synced: bool = False,
-    console: Console | None = None,
+    result: ExecutionResult, cloud_synced: bool = False, console: Console | None = None,
 ) -> None:
     """Display standardized execution telemetry and ledger destinations."""
     c = console or default_console
@@ -72,8 +63,11 @@ def render_execution_summary(
 
     r = result.record
     table.add_row("Cycle Time (T)", f"{r.cycle_time_sec:.4f} s")
-    table.add_row("Prompt Tokens (Input WIP)", str(r.prompt_tokens))
-    table.add_row("Output Tokens (Generated)", str(r.output_tokens))
+    table.add_row("Context Tokens (WIP)", f"{r.context_tokens:,}")
+    table.add_row("Page Tokens (Input)", f"{r.page_tokens:,}")
+    table.add_row("Prompt Tokens (Total Input)", f"{r.prompt_tokens:,}")
+    table.add_row("Output Tokens (Generated)", f"{r.output_tokens:,}")
+    table.add_row("Total Tokens Processed", f"{r.total_tokens:,}")
     table.add_row("Rework Iterations (P)", str(r.rework_cycles))
     st_style = "bold green" if r.conforming else "bold red"
     st_text = "PASS (Conforming)" if r.conforming else "DEFECT (Non-conforming)"
@@ -87,14 +81,9 @@ def render_execution_summary(
 
 
 def render_status_dashboard(
-    phase: str,
-    factor_x1: int,
-    factor_x2: int,
-    total_runs: int,
-    next_run_id: int,
-    turn_count: int,
-    last_run: dict[str, str] | None = None,
-    console: Console | None = None,
+    phase: str, factor_x1: int, factor_x2: int, total_runs: int,
+    next_run_id: int, turn_count: int, last_run: dict[str, str] | None = None,
+    context_tokens: int = 0, console: Console | None = None,
 ) -> None:
     """Render standardized project status overview dashboard."""
     c = console or default_console
@@ -109,7 +98,7 @@ def render_status_dashboard(
     table.add_row("Factor X2 (Prompt Schema)", x2_desc)
     table.add_row("Total Runs Completed", str(total_runs))
     table.add_row("Next Target Run ID", f"#{next_run_id:03d}")
-    table.add_row("Active Cache Turns", f"{turn_count} turns (~{turn_count * 260:,} tokens)")
+    table.add_row("Active Cache Turns", f"{turn_count} turns ({context_tokens:,} tokens)")
 
     if last_run:
         f_name = f" ({last_run.get('input_file')})" if last_run.get("input_file") else ""

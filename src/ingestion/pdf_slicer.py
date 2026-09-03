@@ -1,7 +1,7 @@
 """Extracts individual pages from textbook PDFs and evaluates text density."""
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from pathlib import Path
 
 import pypdf

@@ -26,6 +26,7 @@ def test_render_header() -> None:
         factor_x1=0,
         factor_x2=0,
         turn_count=4,
+        context_tokens=1500,
         console=console,
     )
     output = console.export_text()
@@ -34,6 +35,7 @@ def test_render_header() -> None:
     assert "Phase_I" in output
     assert "#005" in output
     assert "page_005.pdf" in output
+    assert "1,500 context tokens" in output
 
 
 def test_render_inspection_gate_pass_and_fail() -> None:

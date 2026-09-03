@@ -1,5 +1,6 @@
 """Unit tests for CLI parser and dispatch entrypoint."""
 
+from pathlib import Path
 from unittest.mock import patch
 
 from src.ui.cli import app, build_parser
@@ -49,3 +50,33 @@ def test_app_dispatches_to_handlers() -> None:
     with patch("src.ui.cli.handle_run", return_value=0) as mock_run:
         assert app(["run", "--page", "p.pdf"]) == 0
         mock_run.assert_called_once()
+
+    with patch("src.ui.cli.handle_rebuild_cache", return_value=0) as mock_rebuild:
+        assert app(["rebuild-cache"]) == 0
+        mock_rebuild.assert_called_once()
+
+
+def test_rebuild_cache_subcommand(tmp_path: Path) -> None:
+    """Verify rebuild-cache command parses arguments."""
+    parser = build_parser()
+    args = parser.parse_args(["rebuild-cache", "--phase", "Phase_I", "--logs-dir", str(tmp_path)])
+    assert args.command == "rebuild-cache"
+    assert args.phase == "Phase_I"
+    assert args.logs_dir == str(tmp_path)
+
+
+def test_handle_rebuild_cache_execution(tmp_path: Path, monkeypatch) -> None:
+    """Verify handle_rebuild_cache executes and outputs success."""
+    import argparse
+    import json
+
+    from src.ui.handlers import handle_rebuild_cache
+
+    monkeypatch.chdir(tmp_path)
+    logs_dir = tmp_path / "logs"
+    logs_dir.mkdir(parents=True)
+    audit = {"run_id": 1, "phase": "Phase_I", "request_prompt": "P", "final_output_markdown": "O"}
+    (logs_dir / "run_001_audit.json").write_text(json.dumps(audit), encoding="utf-8")
+
+    args = argparse.Namespace(phase="Phase_I", logs_dir=str(logs_dir))
+    assert handle_rebuild_cache(args) == 0

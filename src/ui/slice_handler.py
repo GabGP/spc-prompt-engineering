@@ -1,6 +1,7 @@
 """Handler for textbook PDF page slicing command."""
 
 import argparse
+
 from rich.console import Console
 
 from src.config import Settings

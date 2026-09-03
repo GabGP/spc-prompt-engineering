@@ -3,7 +3,12 @@
 import argparse
 import sys
 
-from src.ui.handlers import handle_run, handle_slice, handle_status
+from src.ui.handlers import (
+    handle_rebuild_cache,
+    handle_run,
+    handle_slice,
+    handle_status,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -95,6 +100,20 @@ def build_parser() -> argparse.ArgumentParser:
         "--start-index", metavar="N", type=int, help="Custom starting index for output filenames [default: 1 if sequential]"
     )
     slice_parser.set_defaults(func=handle_slice)
+
+    rebuild_parser = subparsers.add_parser(
+        "rebuild-cache",
+        help="Rebuild session cache",
+        description="Reconstruct session cache from audit logs ledger",
+        formatter_class=formatter,
+    )
+    rebuild_parser.add_argument(
+        "--phase", metavar="NAME", default="Phase_I", help="Phase to reconstruct [default: Phase_I]"
+    )
+    rebuild_parser.add_argument(
+        "--logs-dir", metavar="DIR", default="data/logs", help="Audit logs directory [default: data/logs]"
+    )
+    rebuild_parser.set_defaults(func=handle_rebuild_cache)
 
     return parser
 

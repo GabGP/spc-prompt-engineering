@@ -1,6 +1,7 @@
 """Unit tests for UI progress bar factory."""
 
 import io
+
 from rich.console import Console
 
 from src.ui.progress import create_slice_progress
