@@ -32,6 +32,7 @@ class RunRecord(BaseModel):
 
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     run_id: int
+    input_file: str = "unknown"
     phase: str
     factor_x1: int = Field(ge=0, le=1)
     factor_x2: int = Field(ge=0, le=1)
@@ -54,6 +55,7 @@ class RunRecord(BaseModel):
         return {
             "timestamp": self.timestamp.isoformat(),
             "run_id": self.run_id,
+            "input_file": self.input_file,
             "phase": self.phase,
             "factor_x1": self.factor_x1,
             "factor_x2": self.factor_x2,

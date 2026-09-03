@@ -8,6 +8,7 @@ from src.core.models import RunRecord
 CSV_FIELDNAMES: tuple[str, ...] = (
     "timestamp",
     "run_id",
+    "input_file",
     "phase",
     "factor_x1",
     "factor_x2",

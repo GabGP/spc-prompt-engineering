@@ -93,6 +93,7 @@ class TransformationExecutor:
         record = RunRecord(
             timestamp=datetime.now(UTC),
             run_id=run_id,
+            input_file=input_filename,
             phase=phase,
             factor_x1=factor_x1,
             factor_x2=factor_x2,
