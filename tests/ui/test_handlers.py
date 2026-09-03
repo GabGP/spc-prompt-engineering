@@ -70,7 +70,7 @@ def test_handle_run_missing_file_and_missing_key(
 
 
 def test_handle_run_success(tmp_path: Path, monkeypatch) -> None:
-    """Verify successful handle_run execution and view rendering."""
+    """Verify successful handle_run execution with PDF input."""
     from tests.ingestion.test_pdf_slicer import make_test_pdf
 
     monkeypatch.chdir(tmp_path)
@@ -103,6 +103,57 @@ def test_handle_run_success(tmp_path: Path, monkeypatch) -> None:
         input_file=pdf_input.name,
         final_output_markdown="Doc",
         total_cycle_time_sec=3.5,
+        rework_count=0,
+        conforming=True,
+    )
+    mock_result = ExecutionResult(
+        record=mock_record,
+        defect_report=DefectReport(is_conforming=True),
+        output_markdown="Doc",
+        audit_payload=mock_audit,
+    )
+
+    with (
+        patch("src.ui.handlers.GeminiClient", return_value=MagicMock()),
+        patch(
+            "src.ui.handlers.TransformationExecutor.execute_run",
+            return_value=mock_result,
+        ),
+    ):
+        assert handle_run(args) == 0
+
+
+def test_handle_run_with_text_file(tmp_path: Path, monkeypatch) -> None:
+    """Verify successful handle_run execution with text input."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    txt_input = tmp_path / "input.txt"
+    txt_input.write_text("Plain text page content", encoding="utf-8")
+
+    parser = build_parser()
+    args = parser.parse_args(["run", "--page", str(txt_input), "--phase", "Phase_I"])
+
+    mock_record = RunRecord(
+        timestamp=datetime.now(UTC),
+        run_id=2,
+        phase="Phase_I",
+        factor_x1=0,
+        factor_x2=0,
+        cycle_time_sec=2.1,
+        prompt_tokens=50,
+        output_tokens=40,
+        conforming=1,
+        rework_cycles=0,
+        operator="op",
+    )
+    mock_audit = AuditPayload(
+        run_id=2,
+        timestamp="2026-09-02T10:00:00Z",
+        phase="Phase_I",
+        operator="op",
+        input_file=txt_input.name,
+        final_output_markdown="Doc",
+        total_cycle_time_sec=2.1,
         rework_count=0,
         conforming=True,
     )

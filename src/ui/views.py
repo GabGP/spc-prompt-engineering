@@ -1,4 +1,4 @@
-"""Rich terminal layout views, status cards, and inspection badges."""
+"""Standardized Rich terminal layout views, status cards, and inspection badges."""
 
 from rich.console import Console
 from rich.panel import Panel
@@ -8,6 +8,13 @@ from rich.text import Text
 from src.core.models import DefectReport, ExecutionResult
 
 default_console = Console()
+
+PHASE_DESCRIPTIONS: dict[str, str] = {
+    "Phase_I": "Phase_I (Baseline Observation)",
+    "Phase_II": "Phase_II (Context Reset Isolation)",
+    "Phase_III": "Phase_III (SOP Schema Scaffolding)",
+    "Phase_IV": "Phase_IV (Capability & Control Limits)",
+}
 
 
 def render_header(
@@ -20,54 +27,86 @@ def render_header(
     turn_count: int = 0,
     console: Console | None = None,
 ) -> None:
-    """Render the main SPC operational execution banner and parameters."""
+    """Render standardized SPC operational banner and parameters."""
     c = console or default_console
-    title = Text("SPC TRANSFORMATION ENGINE", style="bold cyan")
-    content = (
-        f"[bold]Operator:[/bold] {operator:<18} [bold]Phase:[/bold] {phase}\n"
-        f"[bold]Target Run:[/bold] #{run_id:03d}{'':<14} [bold]Input:[/bold] {input_file}\n"
-        f"[bold]Factor X1 (Buffer):[/bold] {factor_x1} ({'Reset' if factor_x1 else 'Accumulating'})  "
-        f"[bold]Factor X2 (Schema):[/bold] {factor_x2} ({'SOP Schema' if factor_x2 else 'Bare'})\n"
-        f"[bold]Cached Turns in Buffer:[/bold] {turn_count}"
+    x1_desc = "1 (Daily Reset)" if factor_x1 else "0 (Accumulating Buffer)"
+    x2_desc = (
+        "1 (SOP Schema Injection)" if factor_x2 else "0 (Bare / Ad-Hoc Prompt)"
     )
+    content = (
+        f"[bold]Operator:[/bold]   {operator:<20} [bold]Phase:[/bold] {PHASE_DESCRIPTIONS.get(phase, phase)}\n"
+        f"[bold]Target Run:[/bold] #{run_id:03d}{'':<16} [bold]Input:[/bold] {input_file}\n"
+        f"[bold]Factor X1:[/bold]  {x1_desc:<20} [bold]Factor X2:[/bold] {x2_desc}\n"
+        f"[bold]WIP Buffer:[/bold] {turn_count} turns stored in session cache"
+    )
+    title = Text("SPC TRANSFORMATION ENGINE", style="bold cyan")
     c.print(Panel(content, title=title, border_style="cyan"))
 
 
-def render_inspection_results(
+def render_inspection_gate(
     defect_report: DefectReport, console: Console | None = None
 ) -> None:
-    """Display the deterministic Go / No-Go quality gate inspection badge."""
+    """Display standardized 3-gate deterministic inspection breakdown."""
     c = console or default_console
-    if defect_report.is_conforming:
-        c.print(
-            "[bold green][PASS] Quality Gate PASS[/bold green] - All criteria"
-            " satisfied."
-        )
-    else:
-        c.print("[bold red][FAIL] Quality Gate FAIL (Defects Detected):[/bold red]")
-        for reason in defect_report.defect_reasons:
-            c.print(f"  [red]* {reason}[/red]")
+    status = (
+        "[bold green]PASS[/bold green]"
+        if defect_report.is_conforming
+        else "[bold red]DEFECT DETECTED[/bold red]"
+    )
+    c.print(f"  [3/3] Quality Inspection Gate ... {status}")
+
+    h_msg = (
+        "[green]OK[/green]"
+        if not defect_report.missing_headers
+        else f"[red]FAIL (Missing {', '.join(defect_report.missing_headers)})[/red]"
+    )
+    l_msg = (
+        "[green]OK[/green]"
+        if not defect_report.unclosed_latex
+        else "[red]FAIL (Unclosed $$ blocks)[/red]"
+    )
+    e_msg = (
+        "[green]OK[/green]"
+        if not defect_report.empty_rule_violated
+        else "[red]FAIL (Missing 'NONE RECORDED')[/red]"
+    )
+    c.print(f"        * Structural Completeness: {h_msg}")
+    c.print(f"        * LaTeX Syntactical Check: {l_msg}")
+    c.print(f"        * Empty Handling Rule:     {e_msg}")
 
 
 def render_execution_summary(
-    result: ExecutionResult, console: Console | None = None
+    result: ExecutionResult,
+    cloud_synced: bool = False,
+    console: Console | None = None,
 ) -> None:
-    """Display final execution telemetry, cycle time, and output destinations."""
+    """Display standardized execution telemetry and ledger destinations."""
     c = console or default_console
-    table = Table(title="Execution Telemetry", border_style="dim")
-    table.add_column("Metric", style="bold")
+    table = Table(
+        title="Execution Telemetry & Artifact Ledger", border_style="cyan"
+    )
+    table.add_column("Parameter", style="bold")
     table.add_column("Value", style="green")
 
-    table.add_row("Cycle Time (T)", f"{result.record.cycle_time_sec:.4f} s")
-    table.add_row("Prompt Tokens", str(result.record.prompt_tokens))
-    table.add_row("Output Tokens", str(result.record.output_tokens))
-    table.add_row("Rework Iterations (P)", str(result.record.rework_cycles))
-    status_style = "bold green" if result.record.conforming else "bold red"
-    table.add_row("Conforming Status", Text("PASS" if result.record.conforming else "DEFECT", style=status_style))
-    table.add_row("CSV Ledger", "data/main_event_log.csv")
-    table.add_row("Audit Log", f"data/logs/run_{result.record.run_id:03d}_audit.json")
-    table.add_row("Output Document", f"data/outputs/run_{result.record.run_id:03d}.md")
+    r = result.record
+    table.add_row("Cycle Time (T)", f"{r.cycle_time_sec:.4f} s")
+    table.add_row("Prompt Tokens (Input WIP)", str(r.prompt_tokens))
+    table.add_row("Output Tokens (Generated)", str(r.output_tokens))
+    table.add_row("Rework Iterations (P)", str(r.rework_cycles))
 
+    st_style = "bold green" if r.conforming else "bold red"
+    st_text = (
+        "PASS (Conforming)" if r.conforming else "DEFECT (Non-conforming)"
+    )
+    table.add_row("Quality Status", Text(st_text, style=st_style))
+    table.add_row("CSV Ledger", f"data/main_event_log.csv [Row #{r.run_id}]")
+    table.add_row("Audit Log", f"data/logs/run_{r.run_id:03d}_audit.json")
+    table.add_row("Output Document", f"data/outputs/run_{r.run_id:03d}.md")
+    sync_txt = Text(
+        "Updated" if cloud_synced else "Skipped / Offline",
+        style="cyan" if cloud_synced else "dim",
+    )
+    table.add_row("Cloud Webhook", sync_txt)
     c.print(table)
 
 
@@ -81,18 +120,22 @@ def render_status_dashboard(
     last_run: dict[str, str] | None = None,
     console: Console | None = None,
 ) -> None:
-    """Render the project status overview dashboard."""
+    """Render standardized project status overview dashboard."""
     c = console or default_console
     table = Table(title="SPC Project Operational Status", border_style="cyan")
     table.add_column("Parameter", style="bold")
     table.add_column("Current State", style="yellow")
 
-    table.add_row("Active Phase", phase)
-    table.add_row("Factor X1 (Context Buffer)", f"{factor_x1} ({'Reset' if factor_x1 else 'Accumulating'})")
-    table.add_row("Factor X2 (Prompt Schema)", f"{factor_x2} ({'SOP Scaffolding' if factor_x2 else 'Bare Prompt'})")
-    table.add_row("Total Runs Logged", str(total_runs))
+    x1_desc = "1 (Daily Reset)" if factor_x1 else "0 (Accumulating Buffer)"
+    x2_desc = (
+        "1 (SOP Schema Injection)" if factor_x2 else "0 (Bare / Ad-Hoc Prompt)"
+    )
+    table.add_row("Active Calendar Phase", PHASE_DESCRIPTIONS.get(phase, phase))
+    table.add_row("Factor X1 (Context Buffer)", x1_desc)
+    table.add_row("Factor X2 (Prompt Schema)", x2_desc)
+    table.add_row("Total Runs Completed", str(total_runs))
     table.add_row("Next Target Run ID", f"#{next_run_id:03d}")
-    table.add_row("Active Cache Turns", str(turn_count))
+    table.add_row("Active Cache Turns", f"{turn_count} turns stored")
 
     if last_run:
         summary = (

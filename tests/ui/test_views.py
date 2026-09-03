@@ -8,7 +8,7 @@ from src.core.models import AuditPayload, DefectReport, ExecutionResult, RunReco
 from src.ui.views import (
     render_execution_summary,
     render_header,
-    render_inspection_results,
+    render_inspection_gate,
     render_status_dashboard,
 )
 
@@ -34,24 +34,32 @@ def test_render_header() -> None:
     assert "page_005.pdf" in output
 
 
-def test_render_inspection_results_pass_and_fail() -> None:
-    """Verify inspection badge renders correctly for pass and fail states."""
+def test_render_inspection_gate_pass_and_fail() -> None:
+    """Verify inspection gate breakdown renders for pass and defect states."""
     console = Console(record=True)
 
     report_pass = DefectReport(is_conforming=True)
-    render_inspection_results(report_pass, console=console)
+    render_inspection_gate(report_pass, console=console)
     output_pass = console.export_text()
-    assert "Quality Gate PASS" in output_pass
+    assert "Quality Inspection Gate ... PASS" in output_pass
+    assert "Structural Completeness: OK" in output_pass
+    assert "LaTeX Syntactical Check: OK" in output_pass
+    assert "Empty Handling Rule:     OK" in output_pass
 
     console_fail = Console(record=True)
     report_fail = DefectReport(
         is_conforming=False,
-        defect_reasons=["Missing mandatory section header: '## Core Synthesis'"],
+        missing_headers=["## Core Synthesis"],
+        unclosed_latex=True,
+        empty_rule_violated=True,
+        defect_reasons=["Missing header", "Unclosed $$", "Missing empty rule"],
     )
-    render_inspection_results(report_fail, console=console_fail)
+    render_inspection_gate(report_fail, console=console_fail)
     output_fail = console_fail.export_text()
-    assert "Quality Gate FAIL" in output_fail
-    assert "Missing mandatory section header" in output_fail
+    assert "DEFECT DETECTED" in output_fail
+    assert "Missing ## Core Synthesis" in output_fail
+    assert "Unclosed $$ blocks" in output_fail
+    assert "Missing 'NONE RECORDED'" in output_fail
 
 
 def test_render_execution_summary() -> None:
@@ -88,12 +96,13 @@ def test_render_execution_summary() -> None:
         audit_payload=audit,
     )
 
-    render_execution_summary(result, console=console)
+    render_execution_summary(result, cloud_synced=True, console=console)
     output = console.export_text()
     assert "Execution Telemetry" in output
     assert "5.1234 s" in output
     assert "350" in output
     assert "PASS" in output
+    assert "Updated" in output
 
 
 def test_render_status_dashboard() -> None:

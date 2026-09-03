@@ -5,7 +5,7 @@ from src.ui.handlers import handle_run, handle_slice, handle_status
 from src.ui.views import (
     render_execution_summary,
     render_header,
-    render_inspection_results,
+    render_inspection_gate,
     render_status_dashboard,
 )
 
@@ -16,6 +16,6 @@ __all__ = [
     "handle_status",
     "render_execution_summary",
     "render_header",
-    "render_inspection_results",
+    "render_inspection_gate",
     "render_status_dashboard",
 ]
