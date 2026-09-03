@@ -11,7 +11,10 @@ from src.persistence.audit_logger import AuditLogger
 from src.persistence.csv_logger import CSVLogger
 from src.persistence.webhook_client import WebhookClient
 from src.prompts.loader import (
-    build_prompt, format_rework_prompt, load_bare_prompt, load_memory_context,
+    build_prompt,
+    format_rework_prompt,
+    load_bare_prompt,
+    load_memory_context,
 )
 from src.state.session_manager import SessionManager
 from src.validation.inspector import QualityInspector

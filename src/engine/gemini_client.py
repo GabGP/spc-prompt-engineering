@@ -3,7 +3,7 @@
 from typing import Any
 
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 
 
 def extract_token_metadata(response: Any) -> dict[str, Any]:
@@ -88,5 +88,5 @@ class GeminiClient:
                 contents=parsed,
             )
             return getattr(res, "total_tokens", 0) or 0
-        except (TypeError, ValueError, KeyError, AttributeError, RuntimeError, OSError):
+        except (errors.APIError, TypeError, ValueError, KeyError, AttributeError, RuntimeError, OSError):
             return 0
