@@ -41,5 +41,8 @@ addopts = "--cov=src --cov-report=term-missing --cov-fail-under=80"
 [tool.coverage.run]
 data_file = ".cache/coverage/.coverage"
 
+[tool.ruff]
+cache-dir = ".cache/ruff"
+
 
 

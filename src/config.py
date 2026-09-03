@@ -63,9 +63,14 @@ class Settings(BaseSettings):
         return self.data_dir / "main_event_log.csv"
 
     @property
+    def cache_dir(self) -> Path:
+        """Root directory for caches."""
+        return self.base_dir / ".cache"
+
+    @property
     def session_cache_file(self) -> Path:
         """Multi-turn conversation session cache file."""
-        return self.base_dir / ".session_cache.json"
+        return self.cache_dir / "session_cache.json"
 
     def ensure_directories(self) -> None:
         """Ensure all required runtime directories exist."""
@@ -75,6 +80,7 @@ class Settings(BaseSettings):
             self.inputs_dir,
             self.outputs_dir,
             self.logs_dir,
+            self.cache_dir,
         ]:
             directory.mkdir(parents=True, exist_ok=True)
 

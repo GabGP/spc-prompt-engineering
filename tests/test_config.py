@@ -14,13 +14,15 @@ def test_default_settings() -> None:
     assert isinstance(settings.data_dir, Path)
     assert settings.main_log_file.name == "main_event_log.csv"
     assert settings.prompts_dir.name == "prompts"
-    assert settings.session_cache_file.name == ".session_cache.json"
+    assert settings.session_cache_file.name == "session_cache.json"
+    assert settings.cache_dir.name == ".cache"
 
 
 def test_ensure_directories(mock_settings: Settings) -> None:
     """Verify that ensure_directories creates all required data paths."""
     assert not mock_settings.data_dir.exists()
     assert not mock_settings.inputs_dir.exists()
+    assert not mock_settings.cache_dir.exists()
 
     mock_settings.ensure_directories()
 
@@ -29,6 +31,7 @@ def test_ensure_directories(mock_settings: Settings) -> None:
     assert mock_settings.inputs_dir.exists()
     assert mock_settings.outputs_dir.exists()
     assert mock_settings.logs_dir.exists()
+    assert mock_settings.cache_dir.exists()
 
 
 def test_custom_settings(tmp_path: Path) -> None:
