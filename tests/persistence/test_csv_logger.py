@@ -44,7 +44,7 @@ def test_csv_logger_creates_file_and_header(tmp_path: Path) -> None:
     assert row[1] == "1"
     assert row[2] == "page_001.pdf"
     assert row[3] == "Phase_I"
-    assert row[12] == "analyst_test"
+    assert row[15] == "analyst_test"
 
 
 def test_csv_logger_appends_without_duplicate_header(tmp_path: Path) -> None:

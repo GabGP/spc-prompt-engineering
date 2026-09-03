@@ -37,8 +37,11 @@ class RunRecord(BaseModel):
     factor_x1: int = Field(ge=0, le=1)
     factor_x2: int = Field(ge=0, le=1)
     cycle_time_sec: float = Field(gt=0.0)
+    context_tokens: int = Field(default=0, ge=0)
+    page_tokens: int = Field(default=0, ge=0)
     prompt_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
+    total_tokens: int = Field(default=0, ge=0)
     conforming: int = Field(ge=0, le=1)
     rework_cycles: int = Field(ge=0)
     assignable_cause: str = "NONE"
@@ -60,8 +63,11 @@ class RunRecord(BaseModel):
             "factor_x1": self.factor_x1,
             "factor_x2": self.factor_x2,
             "cycle_time_sec": self.cycle_time_sec,
+            "context_tokens": self.context_tokens,
+            "page_tokens": self.page_tokens,
             "prompt_tokens": self.prompt_tokens,
             "output_tokens": self.output_tokens,
+            "total_tokens": self.total_tokens,
             "conforming": self.conforming,
             "rework_cycles": self.rework_cycles,
             "assignable_cause": self.assignable_cause,
