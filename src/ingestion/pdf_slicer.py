@@ -1,8 +1,11 @@
 """Extracts individual pages from textbook PDFs and evaluates text density."""
 
+import logging
 from pathlib import Path
 
 import pypdf
+
+logging.getLogger("pypdf").setLevel(logging.ERROR)
 
 
 class PDFSlicer:

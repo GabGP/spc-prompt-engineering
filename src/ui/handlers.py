@@ -37,7 +37,7 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
         Path(args.page) if args.page else Path(f"data/inputs/page_{run_id:03d}.pdf")
     )
     if not input_path.exists():
-        c.print(f"[bold red]Error:[/bold red] Input file not found: {input_path}")
+        c.print(f"[bold red]Error:[/bold red] Input file not found: {input_path.as_posix()}")
         return 1
 
     if not settings.gemini_api_key:
@@ -116,20 +116,23 @@ def handle_slice(args: argparse.Namespace, console: Console | None = None) -> in
     """Slice a range of pages from a source textbook PDF."""
     c = console or default_console
     settings, slicer = Settings(), PDFSlicer()
+
     if args.book:
         src = Path(args.book)
     else:
-        raw_dir = Path("data/raw") if Path("data/raw").exists() else settings.raw_dir
-        raws = list(raw_dir.glob("*.pdf"))
-        if len(raws) == 1:
-            src = raws[0]
+        candidates = list(settings.raw_dir.glob("*.pdf")) if settings.raw_dir.exists() else []
+        if not candidates and settings.data_dir.exists():
+            candidates = [p for p in settings.data_dir.glob("*.pdf") if p.is_file()]
+
+        if len(candidates) == 1:
+            src = candidates[0]
         else:
-            msg = "Multiple PDFs in" if len(raws) > 1 else "No PDF in"
-            c.print(f"[bold red]Error:[/bold red] {msg} {raw_dir}. Specify -b / --book PATH.")
+            msg = "Multiple PDFs found in" if len(candidates) > 1 else "No PDF found in"
+            c.print(f"[bold red]Error:[/bold red] {msg} data/raw/ or data/. Specify -b / --book PATH.")
             return 1
 
     if not src.exists():
-        c.print(f"[bold red]Error:[/bold red] Source textbook PDF not found: {src}")
+        c.print(f"[bold red]Error:[/bold red] Source textbook PDF not found: {src.as_posix()}")
         return 1
 
     try:

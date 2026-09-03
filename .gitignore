@@ -53,6 +53,7 @@ htmlcov/
 Thumbs.db
 
 # Experimental Data Privacy (Heavy & Copyrighted Assets)
+data/*.pdf
 data/raw/*
 data/inputs/*
 data/outputs/*

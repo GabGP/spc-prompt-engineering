@@ -24,18 +24,48 @@ class Settings(BaseSettings):
     # Cloud Webhook (Optional)
     sheet_webhook_url: str | None = None
 
-    # Base directory paths
-    base_dir: Path = Path(__file__).resolve().parent.parent
-    data_dir: Path = base_dir / "data"
-    raw_dir: Path = data_dir / "raw"
-    inputs_dir: Path = data_dir / "inputs"
-    outputs_dir: Path = data_dir / "outputs"
-    logs_dir: Path = data_dir / "logs"
-    prompts_dir: Path = Path(__file__).resolve().parent / "prompts"
+    # Base directory path (relative to active project root)
+    base_dir: Path = Path(".")
 
-    # File paths
-    main_log_file: Path = data_dir / "main_event_log.csv"
-    session_cache_file: Path = base_dir / ".session_cache.json"
+    @property
+    def data_dir(self) -> Path:
+        """Root data directory."""
+        return self.base_dir / "data"
+
+    @property
+    def raw_dir(self) -> Path:
+        """Directory containing raw textbook source PDFs."""
+        return self.data_dir / "raw"
+
+    @property
+    def inputs_dir(self) -> Path:
+        """Directory containing sliced 1-indexed page PDFs."""
+        return self.data_dir / "inputs"
+
+    @property
+    def outputs_dir(self) -> Path:
+        """Directory containing generated transformation markdowns."""
+        return self.data_dir / "outputs"
+
+    @property
+    def logs_dir(self) -> Path:
+        """Directory containing run telemetry and audit logs."""
+        return self.data_dir / "logs"
+
+    @property
+    def prompts_dir(self) -> Path:
+        """Directory containing prompt templates."""
+        return Path(__file__).resolve().parent / "prompts"
+
+    @property
+    def main_log_file(self) -> Path:
+        """Primary SPC event ledger CSV."""
+        return self.data_dir / "main_event_log.csv"
+
+    @property
+    def session_cache_file(self) -> Path:
+        """Multi-turn conversation session cache file."""
+        return self.base_dir / ".session_cache.json"
 
     def ensure_directories(self) -> None:
         """Ensure all required runtime directories exist."""

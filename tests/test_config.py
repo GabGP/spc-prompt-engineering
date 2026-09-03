@@ -13,6 +13,8 @@ def test_default_settings() -> None:
     assert isinstance(settings.base_dir, Path)
     assert isinstance(settings.data_dir, Path)
     assert settings.main_log_file.name == "main_event_log.csv"
+    assert settings.prompts_dir.name == "prompts"
+    assert settings.session_cache_file.name == ".session_cache.json"
 
 
 def test_ensure_directories(mock_settings: Settings) -> None:
