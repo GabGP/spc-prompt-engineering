@@ -17,10 +17,14 @@ def test_build_parser() -> None:
     assert run_args.math is True
 
     # Test slice arguments
-    slice_args = parser.parse_args(["slice", "-b", "book.pdf", "-s", "1", "-e", "10", "-o", "data/inputs"])
+    slice_args = parser.parse_args(
+        ["slice", "-b", "book.pdf", "-s", "1", "-e", "10", "-o", "data/inputs", "--sequential", "--start-index", "1"]
+    )
     assert slice_args.book == "book.pdf"
     assert slice_args.start == 1
     assert slice_args.end == 10
+    assert slice_args.sequential is True
+    assert slice_args.start_index == 1
 
     # Test status arguments
     status_args = parser.parse_args(["status"])

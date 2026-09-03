@@ -195,3 +195,73 @@ def test_handle_run_with_text_file(tmp_path: Path, monkeypatch) -> None:
         ),
     ):
         assert handle_run(args) == 0
+
+
+def test_handle_run_auto_discovers_in_order(tmp_path: Path, monkeypatch) -> None:
+    """Verify handle_run picks input by natural order when --page is not provided."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    in_dir = tmp_path / "data" / "inputs"
+    in_dir.mkdir(parents=True)
+    # Sliced files starting at page 002
+    (in_dir / "page_002.txt").write_text("Page 2 text content", encoding="utf-8")
+
+    parser = build_parser()
+    args = parser.parse_args(["run", "--phase", "Phase_I"])
+
+    mock_record = RunRecord(
+        timestamp=datetime.now(UTC),
+        run_id=1,
+        phase="Phase_I",
+        factor_x1=0,
+        factor_x2=0,
+        cycle_time_sec=1.0,
+        prompt_tokens=100,
+        output_tokens=80,
+        conforming=1,
+        rework_cycles=0,
+        operator="op",
+    )
+    mock_audit = AuditPayload(
+        run_id=1,
+        timestamp="2026-09-02T10:00:00Z",
+        phase="Phase_I",
+        operator="op",
+        input_file="page_002.txt",
+        final_output_markdown="Doc",
+        total_cycle_time_sec=1.0,
+        rework_count=0,
+        conforming=True,
+    )
+    mock_result = ExecutionResult(
+        record=mock_record,
+        defect_report=DefectReport(is_conforming=True),
+        output_markdown="Doc",
+        audit_payload=mock_audit,
+    )
+
+    with (
+        patch("src.ui.handlers.GeminiClient", return_value=MagicMock()),
+        patch(
+            "src.ui.handlers.TransformationExecutor.execute_run",
+            return_value=mock_result,
+        ) as mock_exec,
+    ):
+        assert handle_run(args) == 0
+        assert mock_exec.call_args.kwargs["input_filename"] == "page_002.txt"
+
+
+def test_handle_slice_sequential(tmp_path: Path, monkeypatch) -> None:
+    """Verify handle_slice honors --sequential and --start-index flags."""
+    monkeypatch.chdir(tmp_path)
+    from tests.ingestion.test_pdf_slicer import make_test_pdf
+
+    pdf_path = make_test_pdf(tmp_path / "book.pdf", page_count=3)
+    out_dir = tmp_path / "out"
+    parser = build_parser()
+    args = parser.parse_args(
+        ["slice", "-b", str(pdf_path), "-s", "2", "-e", "3", "-o", str(out_dir), "--sequential"]
+    )
+    assert handle_slice(args) == 0
+    assert (out_dir / "page_001.pdf").exists()
+    assert (out_dir / "page_002.pdf").exists()

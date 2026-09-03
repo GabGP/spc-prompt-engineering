@@ -8,6 +8,7 @@ from rich.console import Console
 from src.config import Settings
 from src.engine.executor import TransformationExecutor
 from src.engine.gemini_client import GeminiClient
+from src.ingestion.input_resolver import resolve_input_path, resolve_source_book
 from src.ingestion.pdf_slicer import PDFSlicer
 from src.persistence.audit_logger import AuditLogger
 from src.persistence.csv_logger import CSVLogger
@@ -33,11 +34,14 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
 
     run_id = args.run_id or tracker.get_next_run_id()
     res = resolve_phase(override_phase=args.phase)
-    input_path = (
-        Path(args.page) if args.page else Path(f"data/inputs/page_{run_id:03d}.pdf")
-    )
-    if not input_path.exists():
-        c.print(f"[bold red]Error:[/bold red] Input file not found: {input_path.as_posix()}")
+    try:
+        input_path = resolve_input_path(
+            explicit_page=args.page,
+            run_id=run_id,
+            inputs_dir=settings.inputs_dir,
+        )
+    except (FileNotFoundError, IndexError) as err:
+        c.print(f"[bold red]Error:[/bold red] {err}")
         return 1
 
     if not settings.gemini_api_key:
@@ -67,16 +71,10 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
     )
 
     result = executor.execute_run(
-        run_id=run_id,
-        page_text=page_text,
-        input_filename=input_path.name,
-        phase=res.phase.value,
-        factor_x1=res.factor_x1,
-        factor_x2=res.factor_x2,
-        operator=settings.operator_name,
-        max_reworks=args.reworks,
-        assignable_cause=args.cause,
-        has_math_in_input=args.math,
+        run_id=run_id, page_text=page_text, input_filename=input_path.name,
+        phase=res.phase.value, factor_x1=res.factor_x1, factor_x2=res.factor_x2,
+        operator=settings.operator_name, max_reworks=args.reworks,
+        assignable_cause=args.cause, has_math_in_input=args.math,
     )
 
     c.print(
@@ -100,14 +98,10 @@ def handle_status(args: argparse.Namespace, console: Console | None = None) -> i
         phase_str, x1, x2 = "Outside Window", 0, 0
 
     render_status_dashboard(
-        phase=phase_str,
-        factor_x1=x1,
-        factor_x2=x2,
-        total_runs=tracker.get_total_runs(),
-        next_run_id=tracker.get_next_run_id(),
+        phase=phase_str, factor_x1=x1, factor_x2=x2,
+        total_runs=tracker.get_total_runs(), next_run_id=tracker.get_next_run_id(),
         turn_count=session_mgr.get_history_turn_count(),
-        last_run=tracker.get_last_run(),
-        console=c,
+        last_run=tracker.get_last_run(), console=c,
     )
     return 0
 
@@ -117,27 +111,19 @@ def handle_slice(args: argparse.Namespace, console: Console | None = None) -> in
     c = console or default_console
     settings, slicer = Settings(), PDFSlicer()
 
-    if args.book:
-        src = Path(args.book)
-    else:
-        candidates = list(settings.raw_dir.glob("*.pdf")) if settings.raw_dir.exists() else []
-        if not candidates and settings.data_dir.exists():
-            candidates = [p for p in settings.data_dir.glob("*.pdf") if p.is_file()]
-
-        if len(candidates) == 1:
-            src = candidates[0]
-        else:
-            msg = "Multiple PDFs found in" if len(candidates) > 1 else "No PDF found in"
-            c.print(f"[bold red]Error:[/bold red] {msg} data/raw/ or data/. Specify -b / --book PATH.")
-            return 1
-
-    if not src.exists():
-        c.print(f"[bold red]Error:[/bold red] Source textbook PDF not found: {src.as_posix()}")
+    try:
+        src = resolve_source_book(
+            explicit_book=args.book, raw_dir=settings.raw_dir, data_dir=settings.data_dir,
+        )
+    except (FileNotFoundError, ValueError) as err:
+        c.print(f"[bold red]Error:[/bold red] {err}")
         return 1
 
+    start_idx = 1 if getattr(args, "sequential", False) else getattr(args, "start_index", None)
     try:
         files = slicer.slice_range(
-            src_pdf=src, start_page=args.start, end_page=args.end, output_dir=args.output_dir
+            src_pdf=src, start_page=args.start, end_page=args.end,
+            output_dir=args.output_dir, start_index=start_idx,
         )
         render_slice_summary(
             src.name, args.start, args.end, args.output_dir, files, console=c

@@ -68,6 +68,12 @@ def build_parser() -> argparse.ArgumentParser:
     slice_parser.add_argument(
         "-o", "--output-dir", metavar="DIR", default="data/inputs", help="Output directory [default: data/inputs]"
     )
+    slice_parser.add_argument(
+        "--sequential", action="store_true", help="Name output files sequentially starting from page_001.pdf"
+    )
+    slice_parser.add_argument(
+        "--start-index", metavar="N", type=int, help="Custom starting index for output filenames [default: 1 if sequential]"
+    )
     slice_parser.set_defaults(func=handle_slice)
 
     return parser

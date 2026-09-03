@@ -75,6 +75,7 @@ class PDFSlicer:
         start_page: int,
         end_page: int,
         output_dir: Path | str,
+        start_index: int | None = None,
     ) -> list[Path]:
         """Slice a range of pages [start_page, end_page] into individual files."""
         if start_page > end_page:
@@ -85,8 +86,9 @@ class PDFSlicer:
         out_dir = Path(output_dir)
         sliced_files: list[Path] = []
 
-        for page in range(start_page, end_page + 1):
-            target = out_dir / f"page_{page:03d}.pdf"
+        for offset, page in enumerate(range(start_page, end_page + 1)):
+            idx = (start_index + offset) if start_index is not None else page
+            target = out_dir / f"page_{idx:03d}.pdf"
             self.slice_page(src_pdf, page, target)
             sliced_files.append(target)
 

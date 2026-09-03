@@ -138,3 +138,19 @@ def test_slice_range_invalid_bounds(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="cannot exceed end_page"):
         slicer.slice_range(src, start_page=3, end_page=1, output_dir=tmp_path)
+
+
+def test_slice_range_with_start_index(tmp_path: Path) -> None:
+    """Verify slicing with start_index creates sequentially numbered files."""
+    src = make_test_pdf(tmp_path / "book.pdf", page_count=5)
+    out_dir = tmp_path / "inputs"
+
+    slicer = PDFSlicer()
+    # Slice pages 3 to 5 sequentially re-indexed starting from 1
+    files = slicer.slice_range(
+        src, start_page=3, end_page=5, output_dir=out_dir, start_index=1
+    )
+
+    assert len(files) == 3
+    assert [f.name for f in files] == ["page_001.pdf", "page_002.pdf", "page_003.pdf"]
+    assert (out_dir / "page_001.pdf").exists()
