@@ -265,3 +265,19 @@ def test_handle_slice_sequential(tmp_path: Path, monkeypatch) -> None:
     assert handle_slice(args) == 0
     assert (out_dir / "page_001.pdf").exists()
     assert (out_dir / "page_002.pdf").exists()
+
+
+def test_handle_run_with_mock_rework(tmp_path: Path, monkeypatch) -> None:
+    """Verify handle_run executes offline with staged mock rework scenario."""
+    monkeypatch.chdir(tmp_path)
+    in_dir = tmp_path / "data" / "inputs"
+    in_dir.mkdir(parents=True)
+    (in_dir / "page_001.txt").write_text("Test content for transformation", encoding="utf-8")
+
+    parser = build_parser()
+    args = parser.parse_args(["run", "--mock", "rework", "--phase", "Phase_I"])
+    assert handle_run(args) == 0
+    assert (tmp_path / "data" / "main_event_log.csv").exists()
+    assert (tmp_path / "data" / "logs" / "run_001_audit.json").exists()
+    assert (tmp_path / "data" / "outputs" / "run_001.md").exists()
+

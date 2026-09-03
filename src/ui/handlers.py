@@ -6,9 +6,11 @@ from pathlib import Path
 from rich.console import Console
 
 from src.config import Settings
+from src.core.models import DefectReport
+from src.engine.client_factory import create_engine_client
 from src.engine.executor import TransformationExecutor
 from src.engine.gemini_client import GeminiClient
-from src.ingestion.input_resolver import resolve_input_path, resolve_source_book
+from src.ingestion.input_resolver import resolve_input_path
 from src.ingestion.pdf_slicer import PDFSlicer
 from src.persistence.audit_logger import AuditLogger
 from src.persistence.csv_logger import CSVLogger
@@ -16,13 +18,12 @@ from src.persistence.webhook_client import WebhookClient
 from src.state.phase_resolver import resolve_phase
 from src.state.run_tracker import RunTracker
 from src.state.session_manager import SessionManager
-from src.ui.progress import create_slice_progress
+from src.ui.slice_handler import handle_slice
 from src.ui.views import (
     default_console,
     render_execution_summary,
     render_header,
     render_inspection_gate,
-    render_slice_summary,
     render_status_dashboard,
 )
 
@@ -41,12 +42,13 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
             run_id=run_id,
             inputs_dir=settings.inputs_dir,
         )
-    except (FileNotFoundError, IndexError) as err:
+        client = create_engine_client(
+            mock_mode=getattr(args, "mock", None),
+            api_key=settings.gemini_api_key,
+            model_name=settings.gemini_model,
+        )
+    except (FileNotFoundError, IndexError, ValueError) as err:
         c.print(f"[bold red]Error:[/bold red] {err}")
-        return 1
-
-    if not settings.gemini_api_key:
-        c.print("[bold red]Error:[/bold red] GEMINI_API_KEY is not configured.")
         return 1
 
     if input_path.suffix.lower() == ".pdf":
@@ -64,23 +66,30 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
     )
     c.print(f"  [1/3] Slicing & Input Verification ... [green]OK[/green] ({word_count} words)")
 
-    client = GeminiClient(api_key=settings.gemini_api_key, model_name=settings.gemini_model)
+    def notify_rework(n: int, r: DefectReport, _: str) -> None:
+        reasons = ", ".join(r.defect_reasons)
+        c.print(f"  [bold yellow][!] Quality Gate Rejection (Attempt {n - 1}): {reasons}[/bold yellow]")
+        c.print(f"  [bold cyan][>] Dispatching Dynamic Rework Prompt #{n} to Engine...[/bold cyan]")
+
     executor = TransformationExecutor(
         gemini_client=client, session_manager=session_mgr,
         csv_logger=CSVLogger(), audit_logger=AuditLogger(),
         webhook_client=WebhookClient(webhook_url=settings.sheet_webhook_url),
     )
+    mock_tag = f" (Offline Mock: {args.mock})" if getattr(args, "mock", None) else ""
+    c.print(f"  [2/3] Dispatching to Gemini Engine ...{mock_tag}")
 
     result = executor.execute_run(
         run_id=run_id, page_text=page_text, input_filename=input_path.name,
         phase=res.phase.value, factor_x1=res.factor_x1, factor_x2=res.factor_x2,
         operator=settings.operator_name, max_reworks=args.reworks,
         assignable_cause=args.cause, has_math_in_input=args.math,
+        on_rework=notify_rework,
     )
 
     c.print(
-        f"  [2/3] Dispatching to Gemini Engine ... [green]DONE[/green] "
-        f"(Cycle Time: {result.record.cycle_time_sec:.2f}s)"
+        f"  [2/3] Engine Finished ... [green]DONE[/green] "
+        f"(Cycle Time: {result.record.cycle_time_sec:.2f}s, Reworks: {result.record.rework_cycles})"
     )
     render_inspection_gate(result.defect_report, console=c)
     render_execution_summary(result, cloud_synced=bool(settings.sheet_webhook_url), console=c)
@@ -107,39 +116,8 @@ def handle_status(args: argparse.Namespace, console: Console | None = None) -> i
     return 0
 
 
-def handle_slice(args: argparse.Namespace, console: Console | None = None) -> int:
-    """Slice a range of pages from a source textbook PDF."""
-    c = console or default_console
-    settings, slicer = Settings(), PDFSlicer()
-
-    try:
-        src = resolve_source_book(
-            explicit_book=args.book, raw_dir=settings.raw_dir, data_dir=settings.data_dir,
-        )
-    except (FileNotFoundError, ValueError) as err:
-        c.print(f"[bold red]Error:[/bold red] {err}")
-        return 1
-
-    start_idx = 1 if getattr(args, "sequential", False) else getattr(args, "start_index", None)
-    total_pages = max(0, args.end - args.start + 1)
-    try:
-        with create_slice_progress(console=c) as progress:
-            task = progress.add_task(
-                f"Slicing {src.name} [p.{args.start}-{args.end}]",
-                total=total_pages,
-            )
-            files = slicer.slice_range(
-                src_pdf=src,
-                start_page=args.start,
-                end_page=args.end,
-                output_dir=args.output_dir,
-                start_index=start_idx,
-                on_progress=lambda cur, tot, _: progress.update(task, completed=cur),
-            )
-        render_slice_summary(
-            src.name, args.start, args.end, args.output_dir, files, console=c
-        )
-        return 0
-    except (FileNotFoundError, IndexError, ValueError) as err:
-        c.print(f"[bold red]Error slicing PDF:[/bold red] {err}")
-        return 1
+__all__ = [
+    "handle_run",
+    "handle_slice",
+    "handle_status",
+]

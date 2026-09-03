@@ -40,6 +40,14 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--math", action="store_true", help="Flag if input contains analytical formulas"
     )
+    run_parser.add_argument(
+        "--mock",
+        nargs="?",
+        const="rework",
+        default=None,
+        choices=["rework", "pass", "fail", "latex", "empty_math"],
+        help="Simulate run offline with staged responses [default: rework]",
+    )
     run_parser.set_defaults(func=handle_run)
 
     status_parser = subparsers.add_parser(

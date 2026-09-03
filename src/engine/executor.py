@@ -1,10 +1,11 @@
 """Transformation execution engine orchestrating LLM dispatch, inspection, and rework."""
 
-import time
+from collections.abc import Callable
 from datetime import UTC, datetime
+import time
 from typing import Any
 
-from src.core.models import AuditPayload, ExecutionResult, RunRecord
+from src.core.models import AuditPayload, DefectReport, ExecutionResult, RunRecord
 from src.engine.gemini_client import GeminiClient
 from src.persistence.audit_logger import AuditLogger
 from src.persistence.csv_logger import CSVLogger
@@ -45,6 +46,7 @@ class TransformationExecutor:
         max_reworks: int = 3,
         assignable_cause: str = "NONE",
         has_math_in_input: bool = False,
+        on_rework: Callable[[int, DefectReport, str], None] | None = None,
     ) -> ExecutionResult:
         """Execute a full experimental transformation run with timing and rework."""
         history = self.session_manager.load_history(factor_x1)
@@ -61,18 +63,16 @@ class TransformationExecutor:
             current_text, has_math_in_input=has_math_in_input
         )
         rework_count = 0
-        events: list[dict[str, Any]] = [
-            {
-                "iteration": 0,
-                "conforming": defect_report.is_conforming,
-                "defects": defect_report.defect_reasons,
-            }
-        ]
+        events: list[dict[str, Any]] = [{
+            "iteration": 0, "conforming": defect_report.is_conforming, "defects": defect_report.defect_reasons,
+        }]
 
         while defect_report.has_defects and rework_count < max_reworks:
             rework_count += 1
             bullets = defect_report.format_diagnostic_bullets()
             rework_prompt = format_rework_prompt(rework_count, bullets)
+            if on_rework:
+                on_rework(rework_count, defect_report, rework_prompt)
             current_text, r_tokens = self.gemini_client.send_prompt(
                 chat, rework_prompt
             )
@@ -81,13 +81,9 @@ class TransformationExecutor:
             defect_report = self.inspector.inspect(
                 current_text, has_math_in_input=has_math_in_input
             )
-            events.append(
-                {
-                    "iteration": rework_count,
-                    "conforming": defect_report.is_conforming,
-                    "defects": defect_report.defect_reasons,
-                }
-            )
+            events.append({
+                "iteration": rework_count, "conforming": defect_report.is_conforming, "defects": defect_report.defect_reasons,
+            })
 
         cycle_time = time.perf_counter() - start_time
 
