@@ -6,6 +6,7 @@ from src.ui.views import (
     render_execution_summary,
     render_header,
     render_inspection_gate,
+    render_slice_summary,
     render_status_dashboard,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "render_execution_summary",
     "render_header",
     "render_inspection_gate",
+    "render_slice_summary",
     "render_status_dashboard",
 ]

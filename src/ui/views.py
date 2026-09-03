@@ -1,5 +1,7 @@
 """Standardized Rich terminal layout views, status cards, and inspection badges."""
 
+from pathlib import Path
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -39,8 +41,7 @@ def render_header(
         f"[bold]Factor X1:[/bold]  {x1_desc:<20} [bold]Factor X2:[/bold] {x2_desc}\n"
         f"[bold]WIP Buffer:[/bold] {turn_count} turns stored in session cache"
     )
-    title = Text("SPC TRANSFORMATION ENGINE", style="bold cyan")
-    c.print(Panel(content, title=title, border_style="cyan"))
+    c.print(Panel(content, title=Text("SPC TRANSFORMATION ENGINE", style="bold cyan"), border_style="cyan"))
 
 
 def render_inspection_gate(
@@ -48,28 +49,11 @@ def render_inspection_gate(
 ) -> None:
     """Display standardized 3-gate deterministic inspection breakdown."""
     c = console or default_console
-    status = (
-        "[bold green]PASS[/bold green]"
-        if defect_report.is_conforming
-        else "[bold red]DEFECT DETECTED[/bold red]"
-    )
-    c.print(f"  [3/3] Quality Inspection Gate ... {status}")
-
-    h_msg = (
-        "[green]OK[/green]"
-        if not defect_report.missing_headers
-        else f"[red]FAIL (Missing {', '.join(defect_report.missing_headers)})[/red]"
-    )
-    l_msg = (
-        "[green]OK[/green]"
-        if not defect_report.unclosed_latex
-        else "[red]FAIL (Unclosed $$ blocks)[/red]"
-    )
-    e_msg = (
-        "[green]OK[/green]"
-        if not defect_report.empty_rule_violated
-        else "[red]FAIL (Missing 'NONE RECORDED')[/red]"
-    )
+    st = "[bold green]PASS[/bold green]" if defect_report.is_conforming else "[bold red]DEFECT DETECTED[/bold red]"
+    c.print(f"  [3/3] Quality Inspection Gate ... {st}")
+    h_msg = "[green]OK[/green]" if not defect_report.missing_headers else f"[red]FAIL (Missing {', '.join(defect_report.missing_headers)})[/red]"
+    l_msg = "[green]OK[/green]" if not defect_report.unclosed_latex else "[red]FAIL (Unclosed $$ blocks)[/red]"
+    e_msg = "[green]OK[/green]" if not defect_report.empty_rule_violated else "[red]FAIL (Missing 'NONE RECORDED')[/red]"
     c.print(f"        * Structural Completeness: {h_msg}")
     c.print(f"        * LaTeX Syntactical Check: {l_msg}")
     c.print(f"        * Empty Handling Rule:     {e_msg}")
@@ -82,9 +66,7 @@ def render_execution_summary(
 ) -> None:
     """Display standardized execution telemetry and ledger destinations."""
     c = console or default_console
-    table = Table(
-        title="Execution Telemetry & Artifact Ledger", border_style="cyan"
-    )
+    table = Table(title="Execution Telemetry & Artifact Ledger", border_style="cyan")
     table.add_column("Parameter", style="bold")
     table.add_column("Value", style="green")
 
@@ -93,19 +75,13 @@ def render_execution_summary(
     table.add_row("Prompt Tokens (Input WIP)", str(r.prompt_tokens))
     table.add_row("Output Tokens (Generated)", str(r.output_tokens))
     table.add_row("Rework Iterations (P)", str(r.rework_cycles))
-
     st_style = "bold green" if r.conforming else "bold red"
-    st_text = (
-        "PASS (Conforming)" if r.conforming else "DEFECT (Non-conforming)"
-    )
+    st_text = "PASS (Conforming)" if r.conforming else "DEFECT (Non-conforming)"
     table.add_row("Quality Status", Text(st_text, style=st_style))
     table.add_row("CSV Ledger", f"data/main_event_log.csv [Row #{r.run_id}]")
     table.add_row("Audit Log", f"data/logs/run_{r.run_id:03d}_audit.json")
     table.add_row("Output Document", f"data/outputs/run_{r.run_id:03d}.md")
-    sync_txt = Text(
-        "Updated" if cloud_synced else "Skipped / Offline",
-        style="cyan" if cloud_synced else "dim",
-    )
+    sync_txt = Text("Updated" if cloud_synced else "Skipped / Offline", style="cyan" if cloud_synced else "dim")
     table.add_row("Cloud Webhook", sync_txt)
     c.print(table)
 
@@ -127,9 +103,7 @@ def render_status_dashboard(
     table.add_column("Current State", style="yellow")
 
     x1_desc = "1 (Daily Reset)" if factor_x1 else "0 (Accumulating Buffer)"
-    x2_desc = (
-        "1 (SOP Schema Injection)" if factor_x2 else "0 (Bare / Ad-Hoc Prompt)"
-    )
+    x2_desc = "1 (SOP Schema Injection)" if factor_x2 else "0 (Bare / Ad-Hoc Prompt)"
     table.add_row("Active Calendar Phase", PHASE_DESCRIPTIONS.get(phase, phase))
     table.add_row("Factor X1 (Context Buffer)", x1_desc)
     table.add_row("Factor X2 (Prompt Schema)", x2_desc)
@@ -144,5 +118,27 @@ def render_status_dashboard(
             f"Conforming={last_run.get('conforming')} | P={last_run.get('rework_cycles')}"
         )
         table.add_row("Last Logged Run", summary)
+    c.print(table)
 
+
+def render_slice_summary(
+    src_pdf: str,
+    start_page: int,
+    end_page: int,
+    output_dir: str,
+    created_files: list[Path],
+    console: Console | None = None,
+) -> None:
+    """Render standardized completion table for PDF slicing operations."""
+    c = console or default_console
+    table = Table(title="PDF Slicing Operation Complete", border_style="cyan")
+    table.add_column("Parameter", style="bold")
+    table.add_column("Value", style="green")
+
+    table.add_row("Source PDF", src_pdf)
+    table.add_row("Page Range", f"Page {start_page} to {end_page} ({len(created_files)} pages)")
+    table.add_row("Destination", output_dir)
+    if created_files:
+        sample = f"{created_files[0].name} ... {created_files[-1].name}"
+        table.add_row("Sliced Artifacts", f"{sample} ({len(created_files)} files)")
     c.print(table)

@@ -24,25 +24,48 @@ def test_handle_status_inside_and_outside_window(tmp_path: Path, monkeypatch) ->
         assert handle_status(args) == 0
 
 
-def test_handle_slice_success_and_errors(tmp_path: Path) -> None:
-    """Verify handle_slice processes valid slicing and handles errors."""
+def test_handle_slice_success_and_errors(tmp_path: Path, monkeypatch) -> None:
+    """Verify handle_slice processes valid slicing, auto-detection, and handles errors."""
+    monkeypatch.chdir(tmp_path)
+    from tests.ingestion.test_pdf_slicer import make_test_pdf
+
     parser = build_parser()
 
-    # Error case
+    # Error: missing file explicitly passed
     args_fail = parser.parse_args(
         ["slice", "-b", str(tmp_path / "missing.pdf"), "-s", "1", "-e", "2"]
     )
     assert handle_slice(args_fail) == 1
 
-    # Success case
-    from tests.ingestion.test_pdf_slicer import make_test_pdf
+    # Error: no -b and no PDFs in data/raw
+    raw_dir = tmp_path / "data" / "raw"
+    raw_dir.mkdir(parents=True)
+    args_no_b = parser.parse_args(["slice", "-s", "1", "-e", "2"])
+    assert handle_slice(args_no_b) == 1
 
-    pdf_path = make_test_pdf(tmp_path / "textbook.pdf", page_count=2)
+    # Error: no -b and multiple PDFs in data/raw
+    make_test_pdf(raw_dir / "b1.pdf", page_count=1)
+    make_test_pdf(raw_dir / "b2.pdf", page_count=1)
+    assert handle_slice(args_no_b) == 1
+
+    # Success: auto-detect single PDF in data/raw
+    (raw_dir / "b2.pdf").unlink()
     out_dir = tmp_path / "out"
+    args_auto = parser.parse_args(["slice", "-s", "1", "-e", "1", "-o", str(out_dir)])
+    assert handle_slice(args_auto) == 0
+
+    # Success: explicit -b
+    pdf_path = make_test_pdf(tmp_path / "textbook.pdf", page_count=2)
     args_ok = parser.parse_args(
         ["slice", "-b", str(pdf_path), "-s", "1", "-e", "2", "-o", str(out_dir)]
     )
     assert handle_slice(args_ok) == 0
+
+    # Error: invalid page range
+    args_range_err = parser.parse_args(
+        ["slice", "-b", str(pdf_path), "-s", "10", "-e", "20", "-o", str(out_dir)]
+    )
+    assert handle_slice(args_range_err) == 1
 
 
 def test_handle_run_missing_file_and_missing_key(

@@ -1,6 +1,7 @@
 """Unit tests for Rich terminal views and rendering formatting."""
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 from rich.console import Console
 
@@ -9,6 +10,7 @@ from src.ui.views import (
     render_execution_summary,
     render_header,
     render_inspection_gate,
+    render_slice_summary,
     render_status_dashboard,
 )
 
@@ -143,3 +145,21 @@ def test_render_status_dashboard() -> None:
     )
     output_no_last = console_no_last.export_text()
     assert "Phase_II" in output_no_last
+
+
+def test_render_slice_summary(tmp_path: Path) -> None:
+    """Verify render_slice_summary displays source PDF and output artifacts."""
+    console = Console(record=True)
+    files = [tmp_path / "page_001.pdf", tmp_path / "page_002.pdf"]
+    render_slice_summary(
+        src_pdf="book.pdf",
+        start_page=1,
+        end_page=2,
+        output_dir="data/inputs",
+        created_files=files,
+        console=console,
+    )
+    output = console.export_text()
+    assert "PDF Slicing Operation Complete" in output
+    assert "book.pdf" in output
+    assert "page_001.pdf" in output

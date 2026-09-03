@@ -20,6 +20,7 @@ from src.ui.views import (
     render_execution_summary,
     render_header,
     render_inspection_gate,
+    render_slice_summary,
     render_status_dashboard,
 )
 
@@ -51,25 +52,18 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
 
     turn_count = session_mgr.get_history_turn_count()
     render_header(
-        operator=settings.operator_name,
-        phase=res.phase.value,
-        run_id=run_id,
-        input_file=input_path.name,
-        factor_x1=res.factor_x1,
-        factor_x2=res.factor_x2,
-        turn_count=turn_count,
-        console=c,
+        operator=settings.operator_name, phase=res.phase.value,
+        run_id=run_id, input_file=input_path.name,
+        factor_x1=res.factor_x1, factor_x2=res.factor_x2,
+        turn_count=turn_count, console=c,
     )
     c.print(f"  [1/3] Slicing & Input Verification ... [green]OK[/green] ({word_count} words)")
 
     client = GeminiClient(api_key=settings.gemini_api_key, model_name=settings.gemini_model)
-    webhook = WebhookClient(webhook_url=settings.sheet_webhook_url)
     executor = TransformationExecutor(
-        gemini_client=client,
-        session_manager=session_mgr,
-        csv_logger=CSVLogger(),
-        audit_logger=AuditLogger(),
-        webhook_client=webhook,
+        gemini_client=client, session_manager=session_mgr,
+        csv_logger=CSVLogger(), audit_logger=AuditLogger(),
+        webhook_client=WebhookClient(webhook_url=settings.sheet_webhook_url),
     )
 
     result = executor.execute_run(
@@ -121,15 +115,30 @@ def handle_status(args: argparse.Namespace, console: Console | None = None) -> i
 def handle_slice(args: argparse.Namespace, console: Console | None = None) -> int:
     """Slice a range of pages from a source textbook PDF."""
     c = console or default_console
-    slicer = PDFSlicer()
+    settings, slicer = Settings(), PDFSlicer()
+    if args.book:
+        src = Path(args.book)
+    else:
+        raw_dir = Path("data/raw") if Path("data/raw").exists() else settings.raw_dir
+        raws = list(raw_dir.glob("*.pdf"))
+        if len(raws) == 1:
+            src = raws[0]
+        else:
+            msg = "Multiple PDFs in" if len(raws) > 1 else "No PDF in"
+            c.print(f"[bold red]Error:[/bold red] {msg} {raw_dir}. Specify -b / --book PATH.")
+            return 1
+
+    if not src.exists():
+        c.print(f"[bold red]Error:[/bold red] Source textbook PDF not found: {src}")
+        return 1
+
     try:
         files = slicer.slice_range(
-            src_pdf=args.book,
-            start_page=args.start,
-            end_page=args.end,
-            output_dir=args.output_dir,
+            src_pdf=src, start_page=args.start, end_page=args.end, output_dir=args.output_dir
         )
-        c.print(f"  [1/1] Slicing Textbook PDF ... [green][OK] {len(files)} pages written to {args.output_dir}[/green]")
+        render_slice_summary(
+            src.name, args.start, args.end, args.output_dir, files, console=c
+        )
         return 0
     except (FileNotFoundError, IndexError, ValueError) as err:
         c.print(f"[bold red]Error slicing PDF:[/bold red] {err}")
