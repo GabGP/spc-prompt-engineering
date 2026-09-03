@@ -1,8 +1,10 @@
 """Unit tests for spc.core.models."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 import pytest
 from pydantic import ValidationError
+
 from src.core.models import (
     AuditPayload,
     DefectReport,
@@ -37,7 +39,7 @@ def test_defect_report_with_defects() -> None:
 
 def test_run_record_valid_and_csv_dict() -> None:
     """Verify RunRecord serialization to CSV-compatible dictionary."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     record = RunRecord(
         timestamp=now,
         run_id=1,

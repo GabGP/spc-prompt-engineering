@@ -1,7 +1,8 @@
 """Pydantic data models and schemas for SPC runs, inspection, and auditing."""
 
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -29,7 +30,7 @@ class DefectReport(BaseModel):
 class RunRecord(BaseModel):
     """Schema for a single transformation run logged in main_event_log.csv."""
 
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     run_id: int
     phase: str
     factor_x1: int = Field(ge=0, le=1)

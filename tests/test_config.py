@@ -1,6 +1,7 @@
 """Unit tests for spc.config module."""
 
 from pathlib import Path
+
 from src.config import Settings
 
 

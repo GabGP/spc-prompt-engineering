@@ -9,6 +9,7 @@ _cache_prefix.mkdir(parents=True, exist_ok=True)
 sys.pycache_prefix = str(_cache_prefix)
 
 import pytest
+
 from src.config import Settings
 
 

@@ -1,6 +1,7 @@
 """Extracts individual pages from textbook PDFs and evaluates text density."""
 
 from pathlib import Path
+
 import pypdf
 
 

@@ -6,7 +6,7 @@ from src.state.session_manager import SessionManager
 
 __all__ = [
     "PhaseResolution",
-    "resolve_phase",
     "RunTracker",
     "SessionManager",
+    "resolve_phase",
 ]

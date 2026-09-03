@@ -1,6 +1,7 @@
 """Unit tests for phase and factor resolution module."""
 
 from datetime import date
+
 import pytest
 
 from src.core.constants import Phase

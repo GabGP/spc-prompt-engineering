@@ -1,7 +1,7 @@
 """Configuration settings loaded from environment variables and .env file."""
 
 from pathlib import Path
-from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     operator_name: str = "operator"
 
     # Cloud Webhook (Optional)
-    sheet_webhook_url: Optional[str] = None
+    sheet_webhook_url: str | None = None
 
     # Base directory paths
     base_dir: Path = Path(__file__).resolve().parent.parent

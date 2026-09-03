@@ -1,11 +1,11 @@
 """Unit tests for spc.core.constants."""
 
 from datetime import date
+
 from src.core.constants import (
+    PHASE_FACTORS,
     DateRange,
     Phase,
-    PHASE_FACTORS,
-    PHASE_WINDOWS,
     QualityGateRules,
     SPCConstants,
 )

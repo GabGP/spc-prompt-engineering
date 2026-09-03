@@ -2,8 +2,9 @@
 
 import json
 from pathlib import Path
-from pydantic import BaseModel
+
 import pytest
+from pydantic import BaseModel
 
 from src.state.session_manager import SessionManager
 

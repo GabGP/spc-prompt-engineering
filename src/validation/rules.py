@@ -1,6 +1,7 @@
 """Pure deterministic inspection rules for output validation."""
 
 import re
+
 from src.core.constants import QualityGateRules
 
 
