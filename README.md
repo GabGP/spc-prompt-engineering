@@ -47,7 +47,7 @@ $$Y = \alpha_0 + \alpha_1 X_1 + \alpha_2 X_2$$
 
 2. **Clone the repository and navigate to the project root:**
    ```bash
-   cd spc_project
+   cd spc-prompt-engineering
    ```
 
 3. **Install the package in editable mode with development & analysis tools:**
@@ -132,3 +132,25 @@ spc slice --book path/to/textbook.pdf --start 45 --end 105
 
 * **Raw Textbooks & PDFs:** All raw and sliced files in `data/raw/`, `data/inputs/`, and `data/outputs/` are ignored by `.gitignore`.
 * **Telemetry Ledger:** Only code, documentation, tests, and `data/main_event_log.csv` are tracked in Git.
+
+---
+
+## 7. Project Architecture
+
+```text
+spc-prompt-engineering/
+├── src/                      # Direct source tree (no redundant nested folders)
+│   ├── config.py             # Application settings & environment variables
+│   ├── core/                 # SPC constants, calendar windows, & data models
+│   ├── prompts/              # Prompt engineering templates & reflection loader
+│   ├── validation/           # Deterministic Go / No-Go inspection gates
+│   ├── state/                # Calendar date phase resolution & session tracking
+│   ├── engine/               # Gemini API client & latency measurement loop
+│   ├── persistence/          # CSV logger & Google Sheets webhook
+│   ├── ingestion/            # PDF page slicer & text density validator
+│   └── ui/                   # Rich terminal dashboard & CLI commands
+├── tests/                    # Mirrored pytest suite (>80% coverage enforced)
+├── data/                     # Ignored raw inputs/outputs & tracked main_event_log.csv
+├── pyproject.toml            # Packaging configuration & pytest options
+└── README.md                 # Project documentation
+```
