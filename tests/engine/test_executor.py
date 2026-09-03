@@ -70,6 +70,7 @@ def test_executor_conforming_run_first_try(tmp_path: Path) -> None:
     assert result.record.conforming == 1
     assert result.record.rework_cycles == 0
     assert result.record.cycle_time_sec > 0
+    assert result.record.timestamp.tzinfo is not None
     assert result.defect_report.is_conforming
     assert result.audit_payload.conforming
 

@@ -2,7 +2,7 @@
 
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from src.core.models import AuditPayload, DefectReport, ExecutionResult, RunRecord
@@ -112,7 +112,7 @@ class TransformationExecutor:
         cause = f"API_{finish_reason}" if finish_reason != "STOP" and assignable_cause == "NONE" else assignable_cause
 
         record = RunRecord(
-            run_id=run_id, timestamp=datetime.now(UTC), phase=phase,
+            run_id=run_id, timestamp=datetime.now().astimezone(), phase=phase,
             operator=operator, model_version=model_ver, input_file=input_filename,
             factor_x1=factor_x1, factor_x2=factor_x2, context_tokens=ctx_tokens,
             instruction_tokens=instruction_tokens, page_tokens=page_tokens,

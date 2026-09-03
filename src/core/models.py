@@ -1,6 +1,6 @@
 """Pydantic data models and schemas for SPC runs, inspection, and auditing."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
@@ -31,7 +31,7 @@ class RunRecord(BaseModel):
     """Schema for a single transformation run logged in main_event_log.csv."""
 
     run_id: int
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now().astimezone())
     phase: str
     operator: str
     model_version: str = "gemini-2.5-flash"

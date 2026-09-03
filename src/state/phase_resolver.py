@@ -1,6 +1,6 @@
 """Calendar date to experimental Phase and Factor (X1, X2) resolution."""
 
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import NamedTuple
 
 from src.core.constants import PHASE_FACTORS, PHASE_WINDOWS, Phase
@@ -48,7 +48,7 @@ def resolve_phase(
         return PhaseResolution(phase=selected_phase, factor_x1=x1, factor_x2=x2)
 
     eval_date = (
-        target_date if target_date is not None else datetime.now(UTC).date()
+        target_date if target_date is not None else datetime.now().astimezone().date()
     )
 
     for phase, date_range in PHASE_WINDOWS.items():

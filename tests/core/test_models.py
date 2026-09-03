@@ -67,6 +67,25 @@ def test_run_record_valid_and_csv_dict() -> None:
     assert row["operator"] == "test_analyst"
 
 
+def test_run_record_default_timestamp() -> None:
+    """Verify default timestamp uses local timezone-aware datetime."""
+    record = RunRecord(
+        run_id=2,
+        phase="Phase_I",
+        factor_x1=0,
+        factor_x2=0,
+        cycle_time_sec=1.5,
+        prompt_tokens=10,
+        output_tokens=10,
+        conforming=1,
+        rework_cycles=0,
+        operator="test_analyst",
+    )
+    assert record.timestamp.tzinfo is not None
+    iso_str = record.to_csv_dict()["timestamp"]
+    assert "+" in iso_str or "-" in iso_str
+
+
 def test_run_record_validation_errors() -> None:
     """Verify invalid factor values and negative cycle times raise ValidationError."""
     with pytest.raises(ValidationError):

@@ -274,7 +274,7 @@ The CSV ledger at `data/main_event_log.csv` records 20 standardized columns:
 | Col # | Field Name | Type | Example | Description |
 | :-: | :--- | :---: | :--- | :--- |
 | 1 | `run_id` | Integer | `1` | Sequential run identifier ($1, 2, \dots$). |
-| 2 | `timestamp` | ISO-8601 | `2026-09-03T18:24:00.123456+00:00` | UTC timestamp of run dispatch. |
+| 2 | `timestamp` | ISO-8601 | `2026-09-03T14:24:00.123456-06:00` | Local ISO-8601 timestamp with timezone offset. |
 | 3 | `phase` | String | `Phase_I` | Active calendar phase. |
 | 4 | `operator` | String | `analyst_1` | Operator conducting the transformation. |
 | 5 | `model_version` | String | `gemini-3.8-flash` | Server-side model checkpoint. |

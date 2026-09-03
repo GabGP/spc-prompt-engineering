@@ -140,7 +140,7 @@ spc status
 ```
 
 The system displays a Rich terminal dashboard:
-* **Active Calendar Phase:** Resolved automatically based on the current UTC date (or manually overridden).
+* **Active Calendar Phase:** Resolved automatically based on the current local calendar date (or manually overridden).
 * **Factor X1 (Context Buffer):** `0 (Accumulating Buffer)` in Phase I, or `1 (Daily Reset)` in Phases II–IV.
 * **Factor X2 (Prompt Schema):** `0 (Bare Prompt)` in Phases I–II, or `1 (SOP Schema)` in Phases III–IV.
 * **Next Target Run ID:** Sequential identifier for the next row in `data/main_event_log.csv`.
