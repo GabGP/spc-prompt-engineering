@@ -1,7 +1,7 @@
 """Unit tests for spc.config module."""
 
 from pathlib import Path
-from spc.config import Settings
+from src.config import Settings
 
 
 def test_default_settings() -> None:

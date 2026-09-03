@@ -1,7 +1,7 @@
 """Unit tests for spc.core.constants."""
 
 from datetime import date
-from spc.core.constants import (
+from src.core.constants import (
     DateRange,
     Phase,
     PHASE_FACTORS,

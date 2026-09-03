@@ -1,12 +1,12 @@
 """Core domain constants and data models for SPC and prompt engineering."""
 
-from spc.core.constants import (
+from src.core.constants import (
     Phase,
     PHASE_WINDOWS,
     SPCConstants,
     QualityGateRules,
 )
-from spc.core.models import (
+from src.core.models import (
     RunRecord,
     DefectReport,
     AuditPayload,

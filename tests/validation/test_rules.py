@@ -1,6 +1,6 @@
 """Unit tests for spc.validation.rules."""
 
-from spc.validation.rules import (
+from src.validation.rules import (
     check_empty_formula_rule,
     check_latex_closure,
     check_mandatory_headers,

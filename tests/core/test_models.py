@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
-from spc.core.models import (
+from src.core.models import (
     AuditPayload,
     DefectReport,
     ExecutionResult,

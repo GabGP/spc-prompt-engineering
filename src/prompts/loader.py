@@ -1,7 +1,7 @@
 """Utilities for loading and rendering prompt templates."""
 
 from pathlib import Path
-from spc.config import settings
+from src.config import settings
 
 PROMPTS_DIR: Path = Path(__file__).resolve().parent
 

@@ -1,6 +1,6 @@
 """Prompt engineering templates and loading utilities."""
 
-from spc.prompts.loader import (
+from src.prompts.loader import (
     build_prompt,
     format_rework_prompt,
     load_bare_prompt,

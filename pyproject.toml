@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "spc-project"
+name = "spc-prompt-engineering"
 version = "0.1.0"
 description = "Statistical Process Control & Prompt Engineering Optimization Engine"
 readme = "README.md"
@@ -27,16 +27,16 @@ dev = [
 ]
 
 [project.scripts]
-spc = "spc.ui.cli:app"
+spc = "src.ui.cli:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/spc"]
+packages = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["."]
 cache_dir = ".cache/pytest"
-addopts = "--cov=spc --cov-report=term-missing --cov-fail-under=80"
+addopts = "--cov=src --cov-report=term-missing --cov-fail-under=80"
 
 [tool.coverage.run]
 data_file = ".cache/coverage/.coverage"

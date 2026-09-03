@@ -1,6 +1,6 @@
 """Unit tests for spc.validation.inspector."""
 
-from spc.validation.inspector import QualityInspector
+from src.validation.inspector import QualityInspector
 
 
 def test_quality_inspector_conforming() -> None:

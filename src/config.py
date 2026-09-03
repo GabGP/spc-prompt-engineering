@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     sheet_webhook_url: Optional[str] = None
 
     # Base directory paths
-    base_dir: Path = Path(__file__).resolve().parent.parent.parent
+    base_dir: Path = Path(__file__).resolve().parent.parent
     data_dir: Path = base_dir / "data"
     raw_dir: Path = data_dir / "raw"
     inputs_dir: Path = data_dir / "inputs"

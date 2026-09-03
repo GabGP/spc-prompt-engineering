@@ -1,7 +1,7 @@
 """Pure deterministic inspection rules for output validation."""
 
 import re
-from spc.core.constants import QualityGateRules
+from src.core.constants import QualityGateRules
 
 
 def check_mandatory_headers(text: str) -> list[str]:

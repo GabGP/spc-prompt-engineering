@@ -1,7 +1,7 @@
 """Quality inspector orchestrating deterministic Go / No-Go gates."""
 
-from spc.core.models import DefectReport
-from spc.validation.rules import (
+from src.core.models import DefectReport
+from src.validation.rules import (
     check_empty_formula_rule,
     check_latex_closure,
     check_mandatory_headers,
