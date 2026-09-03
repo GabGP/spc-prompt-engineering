@@ -52,11 +52,5 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Experimental Data Privacy (Heavy & Copyrighted Assets)
-data/*.pdf
-data/raw/*
-data/inputs/*
-data/outputs/*
-data/logs/*
-!data/.gitkeep
-!data/main_event_log.csv
+# Data Directory
+data/
