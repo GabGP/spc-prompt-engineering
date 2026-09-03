@@ -1,5 +1,6 @@
 """Unit tests for multi-turn session persistence manager."""
 
+import json
 from pathlib import Path
 from pydantic import BaseModel
 import pytest
@@ -22,7 +23,7 @@ def test_load_history_resets_when_factor_x1_is_one(tmp_path: Path) -> None:
 
 
 def test_load_history_returns_empty_on_missing_file(tmp_path: Path) -> None:
-    """Verify missing cache file returns empty list."""
+    """Verify missing cache and backup files return empty list."""
     manager = SessionManager(cache_path=tmp_path / "non_existent.json")
     assert manager.load_history(factor_x1=0) == []
 
@@ -40,9 +41,10 @@ def test_load_history_handles_corrupt_and_invalid_json(tmp_path: Path) -> None:
 
 
 def test_save_and_load_accumulating_history(tmp_path: Path) -> None:
-    """Verify history items serialize and restore correctly when factor_x1 == 0."""
+    """Verify history items serialize to primary and backup targets."""
     cache_file = tmp_path / ".session_cache.json"
-    manager = SessionManager(cache_path=cache_file)
+    backup_file = tmp_path / ".session_cache.bak"
+    manager = SessionManager(cache_path=cache_file, backup_path=backup_file)
 
     items = [
         {"role": "user", "content": "Turn 1"},
@@ -50,6 +52,9 @@ def test_save_and_load_accumulating_history(tmp_path: Path) -> None:
         "raw text item",
     ]
     manager.save_history(items, factor_x1=0)
+
+    assert cache_file.exists()
+    assert backup_file.exists()
 
     loaded = manager.load_history(factor_x1=0)
     assert len(loaded) == 3
@@ -59,38 +64,112 @@ def test_save_and_load_accumulating_history(tmp_path: Path) -> None:
     assert manager.get_history_turn_count() == 3
 
 
-def test_save_history_clears_cache_when_factor_x1_is_one(tmp_path: Path) -> None:
-    """Verify save_history unlinks cache when factor_x1 == 1."""
+def test_load_history_recovers_from_backup_file(tmp_path: Path) -> None:
+    """Verify automatic recovery from .bak file if primary cache is missing."""
     cache_file = tmp_path / ".session_cache.json"
-    cache_file.write_text("[]", encoding="utf-8")
+    backup_file = tmp_path / ".session_cache.bak"
+    manager = SessionManager(cache_path=cache_file, backup_path=backup_file)
+
+    backup_data = [{"role": "user", "content": "Recovered turn"}]
+    backup_file.write_text(json.dumps(backup_data), encoding="utf-8")
+
+    # Primary does not exist yet
+    assert not cache_file.exists()
+
+    loaded = manager.load_history(factor_x1=0)
+    assert len(loaded) == 1
+    assert loaded[0]["content"] == "Recovered turn"
+    # Primary cache was restored
     assert cache_file.exists()
 
-    manager = SessionManager(cache_path=cache_file)
+
+def test_save_history_clears_cache_when_factor_x1_is_one(tmp_path: Path) -> None:
+    """Verify save_history unlinks cache and backup when factor_x1 == 1."""
+    cache_file = tmp_path / ".session_cache.json"
+    backup_file = tmp_path / ".session_cache.bak"
+    cache_file.write_text("[]", encoding="utf-8")
+    backup_file.write_text("[]", encoding="utf-8")
+
+    manager = SessionManager(cache_path=cache_file, backup_path=backup_file)
     manager.save_history([{"role": "user"}], factor_x1=1)
     assert not cache_file.exists()
+    assert not backup_file.exists()
 
 
 def test_clear_cache_handles_existing_and_missing(tmp_path: Path) -> None:
-    """Verify clear_cache deletes file if present and succeeds silently if absent."""
+    """Verify clear_cache deletes files if present and succeeds silently if absent."""
     cache_file = tmp_path / ".session_cache.json"
     cache_file.write_text("[]", encoding="utf-8")
 
     manager = SessionManager(cache_path=cache_file)
     manager.clear_cache()
     assert not cache_file.exists()
-
-    # Second call should not raise
     manager.clear_cache()
 
 
-def test_clear_cache_handles_os_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify clear_cache suppresses OSError if file cannot be unlinked."""
+def test_error_handling_suppresses_os_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify clear_cache and save_history suppress OSError."""
     cache_file = tmp_path / ".session_cache.json"
     cache_file.write_text("[]", encoding="utf-8")
     manager = SessionManager(cache_path=cache_file)
 
     def mock_unlink(self: Path) -> None:
-        raise OSError("Permission denied")
+        raise OSError("Unlink failure")
 
     monkeypatch.setattr(Path, "unlink", mock_unlink)
     manager.clear_cache()
+
+    def mock_write_text(self: Path, *args, **kwargs) -> None:
+        raise OSError("Write failure")
+
+    monkeypatch.setattr(Path, "write_text", mock_write_text)
+    manager.save_history([{"role": "user"}], factor_x1=0)
+
+
+def test_rebuild_from_audit_logs(tmp_path: Path) -> None:
+    """Verify reconstruction of multi-turn session from audit JSON files."""
+    logs_dir = tmp_path / "logs"
+    logs_dir.mkdir(parents=True)
+    cache_file = tmp_path / ".session_cache.json"
+    manager = SessionManager(cache_path=cache_file)
+
+    # Empty dir returns empty
+    assert manager.rebuild_from_audit_logs(tmp_path / "non_existent") == []
+    assert manager.rebuild_from_audit_logs(logs_dir) == []
+
+    # Write sample audit records
+    audit_1 = {
+        "run_id": 1,
+        "phase": "Phase_I",
+        "request_prompt": "Analyze page 1",
+        "final_output_markdown": "Synthesis 1",
+    }
+    audit_2 = {
+        "run_id": 2,
+        "phase": "Phase_I",
+        "input_file": "page_002.pdf",
+        "request_prompt": "",
+        "final_output_markdown": "Synthesis 2",
+    }
+    audit_3 = {
+        "run_id": 3,
+        "phase": "Phase_II",  # Should be filtered out
+        "request_prompt": "Analyze page 3",
+        "final_output_markdown": "Synthesis 3",
+    }
+
+    (logs_dir / "run_001_audit.json").write_text(json.dumps(audit_1), encoding="utf-8")
+    (logs_dir / "run_002_audit.json").write_text(json.dumps(audit_2), encoding="utf-8")
+    (logs_dir / "run_003_audit.json").write_text(json.dumps(audit_3), encoding="utf-8")
+    (logs_dir / "run_corrupt_audit.json").write_text("{bad json", encoding="utf-8")
+
+    history = manager.rebuild_from_audit_logs(logs_dir, phase="Phase_I")
+    assert len(history) == 4
+    assert history[0]["parts"][0]["text"] == "Analyze page 1"
+    assert history[1]["parts"][0]["text"] == "Synthesis 1"
+    assert "page_002.pdf" in history[2]["parts"][0]["text"]
+    assert history[3]["parts"][0]["text"] == "Synthesis 2"
+
+    # Verify cache file was created and contains the reconstructed history
+    assert cache_file.exists()
+    assert manager.get_history_turn_count() == 4

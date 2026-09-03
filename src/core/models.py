@@ -74,6 +74,7 @@ class AuditPayload(BaseModel):
     phase: str
     operator: str
     input_file: str
+    request_prompt: str = ""
     final_output_markdown: str
     total_cycle_time_sec: float
     rework_count: int

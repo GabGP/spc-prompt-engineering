@@ -36,6 +36,8 @@ env/
 # Environment Variables & Secrets
 .env
 .session_cache.json
+.session_cache.bak
+*.bak
 
 # Test & Tooling Caches
 .cache/

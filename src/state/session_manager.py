@@ -1,4 +1,4 @@
-"""Multi-turn session persistence manager for Phase I context accumulation."""
+"""Multi-turn session persistence manager with backup and audit reconstruction."""
 
 import json
 from pathlib import Path
@@ -6,30 +6,45 @@ from typing import Any
 
 
 class SessionManager:
-    """Manages serialization and restoration of conversational history."""
+    """Manages serialization, mirrored backup, and restoration of conversation history."""
 
-    def __init__(self, cache_path: Path | str = Path(".session_cache.json")) -> None:
+    def __init__(
+        self,
+        cache_path: Path | str = Path(".session_cache.json"),
+        backup_path: Path | str | None = None,
+    ) -> None:
         self.cache_path = Path(cache_path)
+        self.backup_path = (
+            Path(backup_path) if backup_path else self.cache_path.with_suffix(".bak")
+        )
+
+    def _read_file_as_list(self, path: Path) -> list[dict[str, Any]] | None:
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return data if isinstance(data, list) else None
+        except (json.JSONDecodeError, OSError):
+            return None
 
     def load_history(self, factor_x1: int) -> list[dict[str, Any]]:
-        """Load session history if factor_x1 == 0; return empty list if resetting."""
+        """Load history if factor_x1==0; recover from backup if primary is lost."""
         if factor_x1 == 1:
             return []
 
-        if not self.cache_path.exists():
-            return []
+        data = self._read_file_as_list(self.cache_path)
+        if data is not None:
+            return data
 
-        try:
-            content = self.cache_path.read_text(encoding="utf-8")
-            data = json.loads(content)
-            if isinstance(data, list):
-                return data
-            return []
-        except (json.JSONDecodeError, OSError):
-            return []
+        backup_data = self._read_file_as_list(self.backup_path)
+        if backup_data is not None:
+            self.save_history(backup_data, factor_x1=0)
+            return backup_data
+
+        return []
 
     def save_history(self, history: list[Any], factor_x1: int) -> None:
-        """Persist session history if accumulating (factor_x1=0); clear if resetting."""
+        """Persist session history and mirror to backup if accumulating (factor_x1=0)."""
         if factor_x1 == 1:
             self.clear_cache()
             return
@@ -43,18 +58,54 @@ class SessionManager:
             else:
                 serialized.append({"content": str(item)})
 
-        self.cache_path.parent.mkdir(parents=True, exist_ok=True)
-        self.cache_path.write_text(json.dumps(serialized, indent=2), encoding="utf-8")
-
-    def clear_cache(self) -> None:
-        """Remove the session cache file if it exists."""
-        if self.cache_path.exists():
+        content = json.dumps(serialized, indent=2)
+        for target in (self.cache_path, self.backup_path):
             try:
-                self.cache_path.unlink()
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
             except OSError:
                 pass
 
+    def clear_cache(self) -> None:
+        """Remove both primary cache and backup file."""
+        for target in (self.cache_path, self.backup_path):
+            if target.exists():
+                try:
+                    target.unlink()
+                except OSError:
+                    pass
+
     def get_history_turn_count(self) -> int:
-        """Return the number of turns stored in the session cache."""
-        history = self.load_history(factor_x1=0)
-        return len(history)
+        """Return the number of turns currently stored."""
+        return len(self.load_history(factor_x1=0))
+
+    def rebuild_from_audit_logs(
+        self, logs_dir: Path | str, phase: str = "Phase_I"
+    ) -> list[dict[str, Any]]:
+        """Reconstruct multi-turn history from forensic audit logs if cache is lost."""
+        dir_path = Path(logs_dir)
+        if not dir_path.exists():
+            return []
+
+        entries: list[tuple[int, dict[str, Any]]] = []
+        for file in dir_path.glob("run_*_audit.json"):
+            try:
+                data = json.loads(file.read_text(encoding="utf-8"))
+                if isinstance(data, dict) and data.get("phase") == phase:
+                    run_id = int(data.get("run_id", 0))
+                    entries.append((run_id, data))
+            except (json.JSONDecodeError, OSError, ValueError):
+                continue
+
+        entries.sort(key=lambda x: x[0])
+        history: list[dict[str, Any]] = []
+        for _, audit in entries:
+            prompt = audit.get("request_prompt") or f"Input: {audit.get('input_file', '')}"
+            output = audit.get("final_output_markdown", "")
+            history.append({"role": "user", "parts": [{"text": prompt}]})
+            history.append({"role": "model", "parts": [{"text": output}]})
+
+        if history:
+            self.save_history(history, factor_x1=0)
+
+        return history
