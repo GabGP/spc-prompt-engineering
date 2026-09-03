@@ -92,3 +92,29 @@ def test_gemini_client_create_chat_and_send_prompt() -> None:
     assert text == "Sample output text"
     assert tokens["prompt_tokens"] == 80
     assert tokens["output_tokens"] == 40
+
+
+def test_gemini_client_count_tokens() -> None:
+    """Verify count_tokens handles empty, text, lists, and API exceptions."""
+    client = GeminiClient(api_key="fake-key", model_name="gemini-test-model")
+    client._client = MagicMock()
+
+    # Empty contents return 0 immediately without calling client
+    assert client.count_tokens("") == 0
+    assert client.count_tokens([]) == 0
+
+    # Successful call with text
+    client._client.models.count_tokens.return_value = SimpleNamespace(total_tokens=42)
+    assert client.count_tokens("Test prompt") == 42
+
+    # Successful call with list of contents
+    history = [
+        types.Content(role="user", parts=[types.Part.from_text(text="turn1")]),
+        {"role": "model", "parts": [{"text": "turn2"}]},
+        "raw text item",
+    ]
+    assert client.count_tokens(history) == 42
+
+    # Error handling returns 0
+    client._client.models.count_tokens.side_effect = RuntimeError("API unavailable")
+    assert client.count_tokens("Error prone") == 0

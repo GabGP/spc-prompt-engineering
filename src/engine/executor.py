@@ -1,8 +1,8 @@
 """Transformation execution engine orchestrating LLM dispatch, inspection, and rework."""
 
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime
-import time
 from typing import Any
 
 from src.core.models import AuditPayload, DefectReport, ExecutionResult, RunRecord
@@ -51,13 +51,19 @@ class TransformationExecutor:
         """Execute a full experimental transformation run with timing and rework."""
         history = self.session_manager.load_history(factor_x1)
         chat = self.gemini_client.create_chat(raw_history=history)
-
         prompt = build_prompt(factor_x2, page_text)
+
+        cnt_fn = getattr(self.gemini_client, "count_tokens", None)
+        ctx_tokens = int(cnt_fn(history)) if callable(cnt_fn) and history else 0
+        page_tokens = int(cnt_fn(prompt)) if callable(cnt_fn) else 0
 
         start_time = time.perf_counter()
         current_text, tokens = self.gemini_client.send_prompt(chat, prompt)
-        total_prompt_tokens = tokens["prompt_tokens"]
-        total_output_tokens = tokens["output_tokens"]
+        p_tokens, o_tokens = tokens["prompt_tokens"], tokens["output_tokens"]
+        if ctx_tokens == 0 and factor_x1 == 0 and history:
+            ctx_tokens = max(0, p_tokens - page_tokens)
+        if page_tokens == 0:
+            page_tokens = max(0, p_tokens - ctx_tokens)
 
         defect_report = self.inspector.inspect(
             current_text, has_math_in_input=has_math_in_input
@@ -76,8 +82,8 @@ class TransformationExecutor:
             current_text, r_tokens = self.gemini_client.send_prompt(
                 chat, rework_prompt
             )
-            total_prompt_tokens += r_tokens["prompt_tokens"]
-            total_output_tokens += r_tokens["output_tokens"]
+            p_tokens = r_tokens["prompt_tokens"]
+            o_tokens += r_tokens["output_tokens"]
             defect_report = self.inspector.inspect(
                 current_text, has_math_in_input=has_math_in_input
             )
@@ -86,41 +92,34 @@ class TransformationExecutor:
             })
 
         cycle_time = time.perf_counter() - start_time
+        clean_turn = [
+            {"role": "user", "parts": [{"text": prompt}]},
+            {"role": "model", "parts": [{"text": current_text}]},
+        ]
+        self.session_manager.save_history(history + clean_turn, factor_x1)
 
-        if hasattr(chat, "get_history"):
-            self.session_manager.save_history(chat.get_history(), factor_x1)
-
+        total_tokens = p_tokens + o_tokens
         record = RunRecord(
-            timestamp=datetime.now(UTC),
-            run_id=run_id,
-            input_file=input_filename,
-            phase=phase,
-            factor_x1=factor_x1,
-            factor_x2=factor_x2,
-            cycle_time_sec=cycle_time,
-            prompt_tokens=total_prompt_tokens,
-            output_tokens=total_output_tokens,
+            timestamp=datetime.now(UTC), run_id=run_id, input_file=input_filename,
+            phase=phase, factor_x1=factor_x1, factor_x2=factor_x2,
+            cycle_time_sec=cycle_time, context_tokens=ctx_tokens,
+            page_tokens=page_tokens, prompt_tokens=p_tokens,
+            output_tokens=o_tokens, total_tokens=total_tokens,
             conforming=1 if defect_report.is_conforming else 0,
-            rework_cycles=rework_count,
-            assignable_cause=assignable_cause,
+            rework_cycles=rework_count, assignable_cause=assignable_cause,
             operator=operator,
         )
 
         audit = AuditPayload(
-            run_id=run_id,
-            timestamp=record.timestamp.isoformat(),
-            phase=phase,
-            operator=operator,
-            input_file=input_filename,
-            request_prompt=prompt,
-            final_output_markdown=current_text,
-            total_cycle_time_sec=record.cycle_time_sec,
-            rework_count=rework_count,
-            conforming=defect_report.is_conforming,
+            run_id=run_id, timestamp=record.timestamp.isoformat(), phase=phase,
+            operator=operator, input_file=input_filename, request_prompt=prompt,
+            final_output_markdown=current_text, total_cycle_time_sec=record.cycle_time_sec,
+            rework_count=rework_count, conforming=defect_report.is_conforming,
             inspection_events=events,
             raw_usage_metadata={
-                "prompt_tokens": total_prompt_tokens,
-                "output_tokens": total_output_tokens,
+                "context_tokens": ctx_tokens, "page_tokens": page_tokens,
+                "prompt_tokens": p_tokens, "output_tokens": o_tokens,
+                "total_tokens": total_tokens,
             },
         )
 
@@ -130,8 +129,6 @@ class TransformationExecutor:
         self.webhook_client.dispatch(record)
 
         return ExecutionResult(
-            record=record,
-            defect_report=defect_report,
-            output_markdown=current_text,
-            audit_payload=audit,
+            record=record, defect_report=defect_report,
+            output_markdown=current_text, audit_payload=audit,
         )

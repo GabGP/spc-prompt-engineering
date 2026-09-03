@@ -58,3 +58,26 @@ class GeminiClient:
         text = getattr(response, "text", "") or ""
         tokens = extract_token_metadata(response)
         return text, tokens
+
+    def count_tokens(self, contents: Any) -> int:
+        """Count tokens for contents using Gemini API."""
+        if not contents:
+            return 0
+        try:
+            parsed = contents
+            if isinstance(contents, list):
+                parsed = []
+                for item in contents:
+                    if isinstance(item, types.Content):
+                        parsed.append(item)
+                    elif isinstance(item, dict):
+                        parsed.append(types.Content.model_validate(item))
+                    else:
+                        parsed.append(str(item))
+            res = self._client.models.count_tokens(
+                model=self.model_name,
+                contents=parsed,
+            )
+            return getattr(res, "total_tokens", 0) or 0
+        except (TypeError, ValueError, KeyError, AttributeError, RuntimeError, OSError):
+            return 0

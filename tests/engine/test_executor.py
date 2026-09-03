@@ -116,8 +116,9 @@ def test_executor_rework_reflection_loop_recovery(tmp_path: Path) -> None:
 
     assert result.record.rework_cycles == 1
     assert result.record.conforming == 1
-    assert result.record.prompt_tokens == 1000  # 400 + 600
-    assert result.record.output_tokens == 350  # 100 + 250
+    assert result.record.prompt_tokens == 600  # prompt tokens of final accepted iteration
+    assert result.record.output_tokens == 350  # 150 + 200
+    assert result.record.total_tokens == 950
     assert len(result.audit_payload.inspection_events) == 2
 
 
@@ -156,3 +157,40 @@ def test_executor_exceeding_max_reworks(tmp_path: Path) -> None:
     assert result.record.conforming == 0
     assert result.record.rework_cycles == 2
     assert not result.defect_report.is_conforming
+
+
+def test_executor_token_fallback_calculation(tmp_path: Path) -> None:
+    """Verify fallback token calculation when client has no count_tokens."""
+    mock_gemini = MagicMock(spec=[])
+    mock_chat = MagicMock()
+    mock_gemini.create_chat = MagicMock(return_value=mock_chat)
+    mock_gemini.send_prompt = MagicMock(
+        return_value=(
+            CONFORMING_OUTPUT,
+            {"prompt_tokens": 500, "output_tokens": 150},
+        )
+    )
+
+    session_mgr = SessionManager(cache_path=tmp_path / ".cache.json")
+    session_mgr.save_history([{"role": "user", "parts": [{"text": "Prior"}]}], factor_x1=0)
+
+    executor = TransformationExecutor(
+        gemini_client=mock_gemini,
+        session_manager=session_mgr,
+        csv_logger=CSVLogger(log_path=tmp_path / "log.csv"),
+        audit_logger=AuditLogger(logs_dir=tmp_path / "logs", outputs_dir=tmp_path / "outputs"),
+    )
+
+    result = executor.execute_run(
+        run_id=10,
+        page_text="Some text",
+        input_filename="page_010.pdf",
+        phase="Phase_I",
+        factor_x1=0,
+        factor_x2=0,
+        operator="analyst",
+    )
+
+    assert result.record.prompt_tokens == 500
+    assert result.record.context_tokens == 500
+    assert result.record.page_tokens == 0

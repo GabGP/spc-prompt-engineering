@@ -2,57 +2,13 @@
 
 from typing import Any
 
-CONFORMING_MARKDOWN = """## Core Synthesis
-Statistical Process Control (SPC) leverages Shewhart control charts to distinguish
-between common-cause variation and assignable causes, stabilizing operational latency.
-
-## Technical Taxonomy
-- **Common Cause:** Natural, random, inherent variation in an established system.
-- **Assignable Cause:** Specific, identifiable disturbance requiring root-cause intervention.
-- **Cycle Time (T):** Elapsed real-time latency required to process an operational unit.
-
-## Analytical Formulations
-$$ \\bar{X} = \\frac{1}{n} \\sum_{i=1}^{n} X_i $$
-$$ \\text{UCL} = \\bar{X} + A_2 \\bar{R} $$
-$$ \\text{LCL} = \\bar{X} - A_2 \\bar{R} $$
-"""
-
-MISSING_HEADER_MARKDOWN = """## Core Synthesis
-Defective output missing Technical Taxonomy section.
-
-## Analytical Formulations
-$$ \\bar{X} = \\frac{1}{n} \\sum_{i=1}^{n} X_i $$
-"""
-
-UNCLOSED_LATEX_MARKDOWN = """## Core Synthesis
-LaTeX syntax error demonstration.
-
-## Technical Taxonomy
-- **Defect:** Unclosed LaTeX formula block.
-
-## Analytical Formulations
-$$ \\bar{X} = \\frac{1}{n} \\sum_{i=1}^{n} X_i
-"""
-
-MISSING_EMPTY_RULE_MARKDOWN = """## Core Synthesis
-No mathematical expressions in this input unit.
-
-## Technical Taxonomy
-- **Qualitative Content:** Pure narrative without mathematical formulations.
-
-## Analytical Formulations
-No formulas were present in this excerpt.
-"""
-
-EMPTY_RULE_CONFORMING_MARKDOWN = """## Core Synthesis
-No mathematical expressions in this input unit.
-
-## Technical Taxonomy
-- **Qualitative Content:** Pure narrative without mathematical formulations.
-
-## Analytical Formulations
-NONE RECORDED
-"""
+from src.engine.mock_responses import (
+    CONFORMING_MARKDOWN,
+    EMPTY_RULE_CONFORMING_MARKDOWN,
+    MISSING_EMPTY_RULE_MARKDOWN,
+    MISSING_HEADER_MARKDOWN,
+    UNCLOSED_LATEX_MARKDOWN,
+)
 
 
 class MockUsageMetadata:
@@ -107,7 +63,8 @@ class MockGeminiChat:
         else:  # default 'rework'
             resp_text = MISSING_HEADER_MARKDOWN
 
-        p_tokens = 550 + (self.turn_count * 280)
+        hist_tokens = len(self.history) * 260
+        p_tokens = hist_tokens + 550 + (self.turn_count * 50)
         o_tokens = 220 + (self.turn_count * 40)
         self.history.append({"role": "user", "parts": [{"text": prompt}]})
         self.history.append({"role": "model", "parts": [{"text": resp_text}]})
@@ -146,3 +103,12 @@ class MockGeminiClient:
             "total_tokens": response.usage_metadata.total_token_count,
         }
         return response.text, tokens
+
+    def count_tokens(self, contents: Any) -> int:
+        """Deterministic token counter matching mock text density."""
+        if not contents:
+            return 0
+        if isinstance(contents, list):
+            return len(contents) * 260
+        text = str(contents)
+        return max(1, len(text.split()) * 4 // 3)

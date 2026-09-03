@@ -74,3 +74,13 @@ def test_mock_client_fail_scenario() -> None:
         chat, "# QUALITY GATE REJECTION (Rework Iteration 1)"
     )
     assert "## Technical Taxonomy" not in text2
+
+
+def test_mock_client_count_tokens() -> None:
+    """Verify mock count_tokens handles empty, text, and history lists."""
+    client = MockGeminiClient()
+    assert client.count_tokens("") == 0
+    assert client.count_tokens([]) == 0
+    assert client.count_tokens("one two three four") == 5
+    history = [{"parts": [{"text": "one two"}]}, {"parts": [{"text": "three four"}]}]
+    assert client.count_tokens(history) == 520
