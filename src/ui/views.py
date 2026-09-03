@@ -26,8 +26,8 @@ def render_header(
     content = (
         f"[bold]Operator:[/bold] {operator:<18} [bold]Phase:[/bold] {phase}\n"
         f"[bold]Target Run:[/bold] #{run_id:03d}{'':<14} [bold]Input:[/bold] {input_file}\n"
-        f"[bold]Factor X₁ (Buffer):[/bold] {factor_x1} ({'Reset' if factor_x1 else 'Accumulating'})  "
-        f"[bold]Factor X₂ (Schema):[/bold] {factor_x2} ({'SOP Schema' if factor_x2 else 'Bare'})\n"
+        f"[bold]Factor X1 (Buffer):[/bold] {factor_x1} ({'Reset' if factor_x1 else 'Accumulating'})  "
+        f"[bold]Factor X2 (Schema):[/bold] {factor_x2} ({'SOP Schema' if factor_x2 else 'Bare'})\n"
         f"[bold]Cached Turns in Buffer:[/bold] {turn_count}"
     )
     c.print(Panel(content, title=title, border_style="cyan"))
@@ -39,11 +39,14 @@ def render_inspection_results(
     """Display the deterministic Go / No-Go quality gate inspection badge."""
     c = console or default_console
     if defect_report.is_conforming:
-        c.print("[bold green]✔ Quality Gate PASS[/bold green] — All deterministic criteria satisfied.")
+        c.print(
+            "[bold green][PASS] Quality Gate PASS[/bold green] - All criteria"
+            " satisfied."
+        )
     else:
-        c.print("[bold red]✘ Quality Gate FAIL (Defects Detected):[/bold red]")
+        c.print("[bold red][FAIL] Quality Gate FAIL (Defects Detected):[/bold red]")
         for reason in defect_report.defect_reasons:
-            c.print(f"  [red]• {reason}[/red]")
+            c.print(f"  [red]* {reason}[/red]")
 
 
 def render_execution_summary(
@@ -85,8 +88,8 @@ def render_status_dashboard(
     table.add_column("Current State", style="yellow")
 
     table.add_row("Active Phase", phase)
-    table.add_row("Factor X₁ (Context Buffer)", f"{factor_x1} ({'Reset' if factor_x1 else 'Accumulating'})")
-    table.add_row("Factor X₂ (Prompt Schema)", f"{factor_x2} ({'SOP Scaffolding' if factor_x2 else 'Bare Prompt'})")
+    table.add_row("Factor X1 (Context Buffer)", f"{factor_x1} ({'Reset' if factor_x1 else 'Accumulating'})")
+    table.add_row("Factor X2 (Prompt Schema)", f"{factor_x2} ({'SOP Scaffolding' if factor_x2 else 'Bare Prompt'})")
     table.add_row("Total Runs Logged", str(total_runs))
     table.add_row("Next Target Run ID", f"#{next_run_id:03d}")
     table.add_row("Active Cache Turns", str(turn_count))

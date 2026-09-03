@@ -135,7 +135,7 @@ def handle_slice(args: argparse.Namespace, console: Console | None = None) -> in
             output_dir=args.output_dir,
         )
         c.print(
-            f"[bold green]✔ Sliced {len(files)} pages into {args.output_dir}[/bold green]"
+            f"[bold green][OK] Sliced {len(files)} pages into {args.output_dir}[/bold green]"
         )
         return 0
     except (FileNotFoundError, IndexError, ValueError) as err:
