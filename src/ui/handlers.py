@@ -93,7 +93,8 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
 
     c.print(
         f"  [2/3] Engine Finished ... [green]DONE[/green] "
-        f"(Cycle Time: {result.record.cycle_time_sec:.2f}s, Reworks: {result.record.rework_cycles})"
+        f"(Cycle Time: [cyan]{result.record.cycle_time_sec:.2f}s[/cyan], Reworks: [yellow]{result.record.rework_cycles}[/yellow])",
+        highlight=False,
     )
     render_inspection_gate(result.defect_report, console=c)
     render_execution_summary(result, cloud_synced=bool(settings.sheet_webhook_url), console=c)

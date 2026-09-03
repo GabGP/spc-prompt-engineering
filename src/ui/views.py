@@ -62,16 +62,20 @@ def render_execution_summary(
     table.add_column("Value", style="green")
 
     r = result.record
-    table.add_row("Cycle Time (T)", f"{r.cycle_time_sec:.4f} s")
-    table.add_row("Context Tokens (WIP)", f"{r.context_tokens:,}")
-    table.add_row("Page Tokens (Input)", f"{r.page_tokens:,}")
-    table.add_row("Prompt Tokens (Total Input)", f"{r.prompt_tokens:,}")
-    table.add_row("Output Tokens (Generated)", f"{r.output_tokens:,}")
+    table.add_row("Primary Metric (Y: Cycle Time T)", f"{r.cycle_time_sec:.4f} s")
+    table.add_row("Context Tokens (WIP X1)", f"{r.context_tokens:,}")
+    table.add_row("Instruction Tokens (Schema X2)", f"{r.instruction_tokens:,}")
+    table.add_row("Page Tokens (Raw Input I)", f"{r.page_tokens:,}")
+    table.add_row("Framing Tokens (API Protocol)", f"{r.framing_tokens:,}")
+    table.add_row("Prompt Tokens (Total API Input W)", f"{r.prompt_tokens:,}")
+    table.add_row("Output Tokens (Response O)", f"{r.output_tokens:,}")
     table.add_row("Total Tokens Processed", f"{r.total_tokens:,}")
     table.add_row("Rework Iterations (P)", str(r.rework_cycles))
     st_style = "bold green" if r.conforming else "bold red"
     st_text = "PASS (Conforming)" if r.conforming else "DEFECT (Non-conforming)"
     table.add_row("Quality Status", Text(st_text, style=st_style))
+    table.add_row("API Finish Reason", r.finish_reason)
+    table.add_row("Model Version", r.model_version)
     table.add_row("CSV Ledger", f"data/main_event_log.csv [Row #{r.run_id}]")
     table.add_row("Audit Log", f"data/logs/run_{r.run_id:03d}_audit.json")
     table.add_row("Output Document", f"data/outputs/run_{r.run_id:03d}.md")
