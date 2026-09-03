@@ -89,3 +89,17 @@ def test_check_empty_formula_rule() -> None:
 
     # When input has math -> always True (does not require NONE RECORDED)
     assert check_empty_formula_rule(invalid_empty, has_math_in_input=True)
+
+
+def test_detect_math_in_text() -> None:
+    """Verify regex patterns accurately classify math versus qualitative text."""
+    from src.validation.rules import detect_math_in_text
+
+    qualitative = "An overview of statistical learning. Tools for understanding data."
+    assert not detect_math_in_text(qualitative)
+
+    assert detect_math_in_text("Given Y = f(X) + e, we estimate f.")
+    assert detect_math_in_text("The sum is \\sum_{i=1}^n X_i.")
+    assert detect_math_in_text("Control limits: UCL = X_bar + 3*sigma.")
+    assert detect_math_in_text("Variance is Var(X) = E(X^2) - mu^2.")
+    assert detect_math_in_text("Equation: $$ x = 42 $$")

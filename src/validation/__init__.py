@@ -5,6 +5,7 @@ from src.validation.rules import (
     check_empty_formula_rule,
     check_latex_closure,
     check_mandatory_headers,
+    detect_math_in_text,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "check_empty_formula_rule",
     "check_latex_closure",
     "check_mandatory_headers",
+    "detect_math_in_text",
 ]

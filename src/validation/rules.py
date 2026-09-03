@@ -57,3 +57,17 @@ def check_empty_formula_rule(text: str, has_math_in_input: bool = False) -> bool
 
     content = extract_section_content(text, "## Analytical Formulations")
     return QualityGateRules.EMPTY_FORMULA_MARKER in content
+
+
+def detect_math_in_text(text: str) -> bool:
+    """Detect presence of analytical formulas or equations in document text."""
+    patterns = (
+        r"[A-Za-z]\s*[=<>≤≥≈≠]\s*[-+]?[0-9A-Za-z]",
+        r"\\(frac|sum|int|sqrt|alpha|beta|sigma|mu|bar)",
+        r"[∑∫±√]",
+        r"\b(UCL|LCL|C_p|C_pk)\b",
+        r"\b[fgh]\([a-zA-Z0-9_,\s]+\)",
+        r"\b(Var|Cov|Corr|MSE|RSS)\s*\(",
+        r"\$\$",
+    )
+    return bool(re.search("|".join(patterns), text, flags=re.IGNORECASE))
