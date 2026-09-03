@@ -22,33 +22,39 @@ Before installing the application, ensure your environment meets the following r
 
 #### Option A: Using Conda / Miniconda (Recommended)
 ```bash
+# Clone the repository
+git clone https://github.com/GabGP/spc-prompt-engineering.git
+cd spc-prompt-engineering
+
 # Create a dedicated Python 3.11 environment
 conda create -n spc-env python=3.11 -y
 
 # Activate the environment
 conda activate spc-env
-
-# Navigate to the project directory
-cd spc_project
 ```
 
 #### Option B: Using Standard Python `venv` (PowerShell on Windows)
 ```powershell
+# Clone the repository
+git clone https://github.com/GabGP/spc-prompt-engineering.git
+cd spc-prompt-engineering
+
 # Create virtual environment
 python -m venv .venv
 
 # Activate virtual environment
 .venv\Scripts\Activate.ps1
-
-# Navigate to the project directory
-cd spc_project
 ```
 
 #### Option C: Using Standard Python `venv` (Linux / macOS)
 ```bash
+# Clone the repository
+git clone https://github.com/GabGP/spc-prompt-engineering.git
+cd spc-prompt-engineering
+
+# Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-cd spc_project
 ```
 
 ---
@@ -191,10 +197,11 @@ After a run finishes, your artifacts are structured as follows:
 
 | Path | Description | Tracked in Git |
 | :--- | :--- | :---: |
-| `data/main_event_log.csv` | Primary 20-column telemetry ledger | **Yes** |
-| `data/outputs/run_XXX.md` | Accepted structured Markdown artifact | No (Ignored) |
-| `data/logs/run_XXX_audit.json` | Forensic audit trail (prompts, timing, rework history) | No (Ignored) |
-| `.cache/session_cache.json` | Active multi-turn conversation context buffer | No (Ignored) |
+| `data/` | Entire runtime directory (inputs, outputs, logs, `main_event_log.csv`) | No (Ignored via `.gitignore`) |
+| `data/main_event_log.csv` | Primary 20-column telemetry ledger | No (Ignored via `.gitignore`) |
+| `data/outputs/run_XXX.md` | Accepted structured Markdown artifact | No (Ignored via `.gitignore`) |
+| `data/logs/run_XXX_audit.json` | Forensic audit trail (prompts, timing, rework history) | No (Ignored via `.gitignore`) |
+| `.cache/session_cache.json` | Active multi-turn conversation context buffer | No (Ignored via `.gitignore`) |
 
 ---
 

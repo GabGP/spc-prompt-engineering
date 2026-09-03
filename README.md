@@ -142,8 +142,8 @@ Comprehensive documentation and operator manuals are available in the [`docs/`](
 
 ## 7. Git Hygiene & Data Privacy
 
-* **Raw Textbooks & PDFs:** All raw and sliced files in `data/raw/`, `data/inputs/`, and `data/outputs/` are ignored by `.gitignore`.
-* **Telemetry Ledger:** Only code, documentation, tests, and `data/main_event_log.csv` are tracked in Git.
+* **Data Directory Ignored:** The entire `data/` runtime directory (raw textbooks, sliced PDFs, markdown outputs, forensic audit logs, and `main_event_log.csv`) is excluded from Git via `.gitignore`.
+* **Tracked Assets:** Only production code (`src/`), test suites (`tests/`), documentation (`docs/`), environment template (`.env.example`), and project configuration are tracked in Git.
 
 ---
 
@@ -163,7 +163,7 @@ spc-prompt-engineering/
 │   └── ui/                   # Rich terminal dashboard & CLI commands
 ├── tests/                    # Mirrored pytest suite (>80% coverage enforced)
 ├── docs/                     # Comprehensive documentation, manuals, & architecture
-├── data/                     # Ignored raw inputs/outputs & tracked main_event_log.csv
+├── data/                     # Ignored runtime directory (raw, inputs, outputs, logs, event log)
 ├── pyproject.toml            # Packaging configuration & pytest options
 └── README.md                 # Project root documentation
 ```

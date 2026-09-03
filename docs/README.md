@@ -101,12 +101,15 @@ To maintain experimental validity and protect data privacy:
 * **Tracked in Version Control:**
   - Production code (`src/`)
   - Test suites (`tests/`)
-  - Documentation (`docs/`, `README.md`, `GEMINI.md`)
-  - Telemetry ledger (`data/main_event_log.csv`)
-* **Never Tracked in Version Control:**
-  - Raw textbook source PDFs (`data/raw/*.pdf`)
-  - Sliced target page PDFs (`data/inputs/*.pdf`)
-  - Generated markdown output documents (`data/outputs/*.md`)
-  - Detailed forensic audit JSON files (`data/logs/*.json`)
+  - Documentation (`docs/`, `README.md`)
+  - Configuration & environment templates (`pyproject.toml`, `.env.example`)
+* **Never Tracked in Version Control (Ignored via `.gitignore`):**
+  - Entire runtime data directory (`data/`):
+    - Raw textbook source PDFs (`data/raw/`)
+    - Sliced target page PDFs (`data/inputs/`)
+    - Generated markdown output documents (`data/outputs/`)
+    - Detailed forensic audit JSON files (`data/logs/`)
+    - Primary telemetry ledger (`data/main_event_log.csv`)
   - Local session caches (`.cache/*`)
-  - Internal planning scratch files (`experimental_process_plan.md`, `implementation_plan.md`)
+  - Environment secrets (`.env`)
+

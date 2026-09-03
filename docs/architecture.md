@@ -291,6 +291,6 @@ Every transformation run commits telemetry to three synchronized persistence tie
 ## 8. Git Hygiene & Experimental Integrity
 
 To maintain repository cleanliness and protect proprietary input data:
-* **Tracked Assets:** Production code (`src/`), test suite (`tests/`), configuration docs (`docs/`), environment template (`.env.example`), and primary CSV ledger (`data/main_event_log.csv`).
-* **Ignored Artifacts:** Raw textbook source PDFs (`data/raw/`), sliced input pages (`data/inputs/`), generated markdown outputs (`data/outputs/`), forensic audit logs (`data/logs/`), cache files (`.cache/`), and internal planning notes (`experimental_process_plan.md`, `implementation_plan.md`).
+* **Tracked Assets:** Production code (`src/`), test suite (`tests/`), configuration docs (`docs/`), environment template (`.env.example`), and project packaging (`pyproject.toml`).
+* **Ignored Artifacts:** The entire `data/` directory is ignored by Git (`.gitignore`), encompassing raw textbook source PDFs (`data/raw/`), sliced input pages (`data/inputs/`), generated markdown outputs (`data/outputs/`), forensic audit logs (`data/logs/`), and primary event ledger (`data/main_event_log.csv`). Local caches (`.cache/`), environment secrets (`.env`).
 * **Zero Hardcoded Secrets:** No personal identifiers, API keys, or webhook endpoints exist in source code.
