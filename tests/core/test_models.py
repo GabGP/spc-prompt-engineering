@@ -118,6 +118,7 @@ def test_audit_payload_and_execution_result() -> None:
         timestamp="2026-09-24T12:00:00Z",
         phase="Phase_II",
         operator="analyst_2",
+        model_version="gemini-3.8-flash",
         input_file="page_005.pdf",
         final_output_markdown="## Conforming Markdown",
         total_cycle_time_sec=4.25,
@@ -133,3 +134,4 @@ def test_audit_payload_and_execution_result() -> None:
     assert result.record.run_id == 5
     assert result.defect_report.is_conforming
     assert result.audit_payload.conforming
+    assert result.audit_payload.model_version == "gemini-3.8-flash"

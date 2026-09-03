@@ -125,10 +125,10 @@ class TransformationExecutor:
 
         audit = AuditPayload(
             run_id=run_id, timestamp=record.timestamp.isoformat(), phase=phase,
-            operator=operator, input_file=input_filename, request_prompt=prompt,
-            final_output_markdown=current_text, total_cycle_time_sec=record.cycle_time_sec,
-            rework_count=rework_count, conforming=defect_report.is_conforming,
-            inspection_events=events,
+            operator=operator, model_version=model_ver, input_file=input_filename,
+            request_prompt=prompt, final_output_markdown=current_text,
+            total_cycle_time_sec=record.cycle_time_sec, rework_count=rework_count,
+            conforming=defect_report.is_conforming, inspection_events=events,
             raw_usage_metadata={
                 "context_tokens": ctx_tokens, "instruction_tokens": instruction_tokens,
                 "page_tokens": page_tokens, "framing_tokens": framing_tokens,

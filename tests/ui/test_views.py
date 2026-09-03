@@ -36,6 +36,14 @@ def test_render_header() -> None:
     assert "#005" in output
     assert "page_005.pdf" in output
     assert "1,500 context tokens" in output
+    assert "Model: gemini-3.8-flash" in output
+
+    console_custom = Console(record=True)
+    render_header(
+        operator="op", phase="Phase_I", run_id=1, input_file="p.pdf",
+        factor_x1=0, factor_x2=0, model="custom-model", console=console_custom,
+    )
+    assert "Model: custom-model" in console_custom.export_text()
 
 
 def test_render_inspection_gate_pass_and_fail() -> None:
@@ -130,6 +138,8 @@ def test_render_status_dashboard() -> None:
     )
     output = console.export_text()
     assert "SPC Project Operational Status" in output
+    assert "Configured Model" in output
+    assert "gemini-3.8-flash" in output
     assert "Phase_I" in output
     assert "#011" in output
     assert "Run #10" in output
@@ -144,9 +154,11 @@ def test_render_status_dashboard() -> None:
         turn_count=0,
         last_run=None,
         console=console_no_last,
+        model="custom-gemini",
     )
     output_no_last = console_no_last.export_text()
     assert "Phase_II" in output_no_last
+    assert "custom-gemini" in output_no_last
 
 
 def test_render_slice_summary(tmp_path: Path) -> None:

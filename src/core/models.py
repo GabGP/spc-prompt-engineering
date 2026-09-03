@@ -91,6 +91,7 @@ class AuditPayload(BaseModel):
     timestamp: str
     phase: str
     operator: str
+    model_version: str = ""
     input_file: str
     request_prompt: str = ""
     final_output_markdown: str

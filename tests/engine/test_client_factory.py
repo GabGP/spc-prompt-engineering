@@ -8,10 +8,11 @@ from src.engine.mock_client import MockGeminiClient
 
 
 def test_create_engine_client_mock_mode() -> None:
-    """Verify mock mode instantiates MockGeminiClient without API key."""
-    client = create_engine_client(mock_mode="rework")
+    """Verify mock mode instantiates MockGeminiClient without API key and with model_name."""
+    client = create_engine_client(mock_mode="rework", model_name="custom-model")
     assert isinstance(client, MockGeminiClient)
     assert client.scenario == "rework"
+    assert client.model_name == "custom-model"
 
 
 def test_create_engine_client_missing_api_key_raises() -> None:

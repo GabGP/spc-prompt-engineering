@@ -66,7 +66,8 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
         operator=settings.operator_name, phase=res.phase.value,
         run_id=run_id, input_file=input_path.name,
         factor_x1=res.factor_x1, factor_x2=res.factor_x2,
-        turn_count=turn_count, context_tokens=ctx_tokens, console=c,
+        turn_count=turn_count, context_tokens=ctx_tokens,
+        model=settings.gemini_model, console=c,
     )
     has_math = args.math if getattr(args, "math", None) is not None else detect_math_in_text(page_text)
     math_lbl = "detected" if has_math else "none (NONE RECORDED expected)"
@@ -83,7 +84,7 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
         webhook_client=WebhookClient(webhook_url=settings.sheet_webhook_url),
     )
     mock_tag = f" (Offline Mock: {args.mock})" if getattr(args, "mock", None) else ""
-    c.print(f"  [2/3] Dispatching to Gemini Engine ...{mock_tag}")
+    c.print(f"  [2/3] Dispatching to Gemini Engine ({settings.gemini_model}) ...{mock_tag}")
 
     try:
         result = executor.execute_run(
@@ -110,7 +111,7 @@ def handle_run(args: argparse.Namespace, console: Console | None = None) -> int:
 def handle_status(args: argparse.Namespace, console: Console | None = None) -> int:
     """Display project progress, active phase, and session turns."""
     c = console or default_console
-    tracker, session_mgr = RunTracker(), SessionManager()
+    settings, tracker, session_mgr = Settings(), RunTracker(), SessionManager()
 
     try:
         res = resolve_phase()
@@ -124,7 +125,7 @@ def handle_status(args: argparse.Namespace, console: Console | None = None) -> i
         phase=phase_str, factor_x1=x1, factor_x2=x2,
         total_runs=tracker.get_total_runs(), next_run_id=tracker.get_next_run_id(),
         turn_count=turn_count, context_tokens=ctx_tokens,
-        last_run=tracker.get_last_run(), console=c,
+        last_run=tracker.get_last_run(), model=settings.gemini_model, console=c,
     )
     return 0
 
@@ -140,9 +141,4 @@ def handle_rebuild_cache(args: argparse.Namespace, console: Console | None = Non
     return 0
 
 
-__all__ = [
-    "handle_rebuild_cache",
-    "handle_run",
-    "handle_slice",
-    "handle_status",
-]
+__all__ = ["handle_rebuild_cache", "handle_run", "handle_slice", "handle_status"]

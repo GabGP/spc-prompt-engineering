@@ -23,14 +23,17 @@ def render_header(
     operator: str, phase: str, run_id: int, input_file: str,
     factor_x1: int, factor_x2: int, turn_count: int = 0,
     context_tokens: int = 0, console: Console | None = None,
+    model: str = "",
 ) -> None:
     """Render standardized SPC operational banner and parameters."""
     c = console or default_console
     x1_desc = "1 (Daily Reset)" if factor_x1 else "0 (Accumulating Buffer)"
     x2_desc = "1 (SOP Schema Injection)" if factor_x2 else "0 (Bare / Ad-Hoc Prompt)"
+    mdl = model or "gemini-3.8-flash"
     content = (
         f"[bold]Operator:[/bold]   {operator:<20} [bold]Phase:[/bold] {PHASE_DESCRIPTIONS.get(phase, phase)}\n"
-        f"[bold]Target Run:[/bold] #{run_id:03d}{'':<16} [bold]Input:[/bold] {input_file}\n"
+        f"[bold]Target Run:[/bold] #{run_id:03d}{'':<16} [bold]Model:[/bold] {mdl}\n"
+        f"[bold]Input:[/bold]      {input_file}\n"
         f"[bold]Factor X1:[/bold]  {x1_desc:<20} [bold]Factor X2:[/bold] {x2_desc}\n"
         f"[bold]WIP Buffer:[/bold] {turn_count} turns in cache ({context_tokens:,} context tokens)"
     )
@@ -88,6 +91,7 @@ def render_status_dashboard(
     phase: str, factor_x1: int, factor_x2: int, total_runs: int,
     next_run_id: int, turn_count: int, last_run: dict[str, str] | None = None,
     context_tokens: int = 0, console: Console | None = None,
+    model: str = "",
 ) -> None:
     """Render standardized project status overview dashboard."""
     c = console or default_console
@@ -97,6 +101,7 @@ def render_status_dashboard(
 
     x1_desc = "1 (Daily Reset)" if factor_x1 else "0 (Accumulating Buffer)"
     x2_desc = "1 (SOP Schema Injection)" if factor_x2 else "0 (Bare / Ad-Hoc Prompt)"
+    table.add_row("Configured Model", model or "gemini-3.8-flash")
     table.add_row("Active Calendar Phase", PHASE_DESCRIPTIONS.get(phase, phase))
     table.add_row("Factor X1 (Context Buffer)", x1_desc)
     table.add_row("Factor X2 (Prompt Schema)", x2_desc)

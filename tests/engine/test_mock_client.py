@@ -13,7 +13,13 @@ def test_mock_client_pass_scenario() -> None:
     assert "## Analytical Formulations" in text
     assert tokens["prompt_tokens"] > 0
     assert tokens["output_tokens"] > 0
+    assert tokens["model_version"] == "mock-model"
     assert len(chat.get_history()) == 2
+
+    client_custom = MockGeminiClient(scenario="pass", model_name="gemini-3.8-flash")
+    chat_custom = client_custom.create_chat()
+    _, tokens_custom = client_custom.send_prompt(chat_custom, "Translate")
+    assert tokens_custom["model_version"] == "gemini-3.8-flash"
 
 
 def test_mock_client_rework_scenario() -> None:

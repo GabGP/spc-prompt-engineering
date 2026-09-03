@@ -44,10 +44,12 @@ class MockGeminiChat:
         self,
         scenario: str = "rework",
         raw_history: list[dict[str, Any]] | None = None,
+        model_name: str = "gemini-2.5-flash-mock",
     ) -> None:
         self.scenario = scenario
         self.history: list[dict[str, Any]] = list(raw_history) if raw_history else []
         self.turn_count = 0
+        self.model_name = model_name
 
     def send_message(self, prompt: str) -> MockResponse:
         """Emits staged response depending on scenario and retry iteration."""
@@ -77,7 +79,7 @@ class MockGeminiChat:
         o_tokens = 220 + (self.turn_count * 40)
         self.history.append({"role": "user", "parts": [{"text": prompt}]})
         self.history.append({"role": "model", "parts": [{"text": resp_text}]})
-        return MockResponse(resp_text, p_tokens, o_tokens)
+        return MockResponse(resp_text, p_tokens, o_tokens, model_version=self.model_name)
 
     def get_history(self) -> list[dict[str, Any]]:
         """Return serialized session history turns."""
@@ -101,7 +103,9 @@ class MockGeminiClient:
         self, raw_history: list[dict[str, Any]] | None = None
     ) -> MockGeminiChat:
         """Create mock chat instance with simulated history."""
-        return MockGeminiChat(scenario=self.scenario, raw_history=raw_history)
+        return MockGeminiChat(
+            scenario=self.scenario, raw_history=raw_history, model_name=self.model_name
+        )
 
     def send_prompt(self, chat: Any, prompt: str) -> tuple[str, dict[str, Any]]:
         """Dispatch prompt through mock chat session and extract simulated tokens."""

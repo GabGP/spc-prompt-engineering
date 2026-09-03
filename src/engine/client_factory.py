@@ -13,7 +13,7 @@ def create_engine_client(
 ) -> Any:
     """Instantiate appropriate LLM client for live or staged execution."""
     if mock_mode:
-        return MockGeminiClient(scenario=mock_mode)
+        return MockGeminiClient(scenario=mock_mode, model_name=model_name)
 
     if not api_key:
         raise ValueError("GEMINI_API_KEY is not configured.")
