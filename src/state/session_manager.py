@@ -10,13 +10,15 @@ class SessionManager:
 
     def __init__(
         self,
-        cache_path: Path | str = Path(".session_cache.json"),
+        cache_path: Path | str = Path(".cache/session_cache.json"),
         backup_path: Path | str | None = None,
+        logs_dir: Path | str | None = None,
     ) -> None:
         self.cache_path = Path(cache_path)
         self.backup_path = (
             Path(backup_path) if backup_path else self.cache_path.with_suffix(".bak")
         )
+        self.logs_dir = Path(logs_dir) if logs_dir is not None else None
 
     def _read_file_as_list(self, path: Path) -> list[dict[str, Any]] | None:
         if not path.exists():
@@ -28,7 +30,7 @@ class SessionManager:
             return None
 
     def load_history(self, factor_x1: int) -> list[dict[str, Any]]:
-        """Load history if factor_x1==0; recover from backup if primary is lost."""
+        """Load history if factor_x1==0; recover from backup or audit logs if lost."""
         if factor_x1 == 1:
             return []
 
@@ -41,12 +43,17 @@ class SessionManager:
             self.save_history(backup_data, factor_x1=0)
             return backup_data
 
+        if self.logs_dir and self.logs_dir.exists():
+            rebuilt = self.rebuild_from_audit_logs(self.logs_dir, phase="Phase_I")
+            if rebuilt:
+                return rebuilt
+
         return []
 
     def save_history(self, history: list[Any], factor_x1: int) -> None:
         """Persist session history and mirror to backup if accumulating (factor_x1=0)."""
         if factor_x1 == 1:
-            self.clear_cache()
+            self.clear_cache(clear_backup=False)
             return
 
         serialized: list[dict[str, Any]] = []
@@ -66,18 +73,23 @@ class SessionManager:
             except OSError:
                 pass
 
-    def clear_cache(self) -> None:
-        """Remove both primary cache and backup file."""
-        for target in (self.cache_path, self.backup_path):
+    def clear_cache(self, clear_backup: bool = False) -> None:
+        """Remove primary session cache. Preserves backup file unless clear_backup=True."""
+        targets = (
+            (self.cache_path, self.backup_path)
+            if clear_backup
+            else (self.cache_path,)
+        )
+        for target in targets:
             if target.exists():
                 try:
                     target.unlink()
                 except OSError:
                     pass
 
-    def get_history_turn_count(self) -> int:
+    def get_history_turn_count(self, factor_x1: int = 0) -> int:
         """Return the number of turns currently stored."""
-        return len(self.load_history(factor_x1=0))
+        return len(self.load_history(factor_x1=factor_x1))
 
     def rebuild_from_audit_logs(
         self, logs_dir: Path | str, phase: str = "Phase_I"

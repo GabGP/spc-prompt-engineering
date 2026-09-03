@@ -85,7 +85,7 @@ def test_load_history_recovers_from_backup_file(tmp_path: Path) -> None:
 
 
 def test_save_history_clears_cache_when_factor_x1_is_one(tmp_path: Path) -> None:
-    """Verify save_history unlinks cache and backup when factor_x1 == 1."""
+    """Verify save_history unlinks primary cache but preserves backup when factor_x1 == 1."""
     cache_file = tmp_path / ".session_cache.json"
     backup_file = tmp_path / ".session_cache.bak"
     cache_file.write_text("[]", encoding="utf-8")
@@ -94,6 +94,9 @@ def test_save_history_clears_cache_when_factor_x1_is_one(tmp_path: Path) -> None
     manager = SessionManager(cache_path=cache_file, backup_path=backup_file)
     manager.save_history([{"role": "user"}], factor_x1=1)
     assert not cache_file.exists()
+    assert backup_file.exists()
+
+    manager.clear_cache(clear_backup=True)
     assert not backup_file.exists()
 
 
@@ -174,3 +177,24 @@ def test_rebuild_from_audit_logs(tmp_path: Path) -> None:
     # Verify cache file was created and contains the reconstructed history
     assert cache_file.exists()
     assert manager.get_history_turn_count() == 4
+
+
+def test_load_history_recovers_from_audit_logs_fallback(tmp_path: Path) -> None:
+    """Verify load_history automatically rebuilds from logs_dir if cache and backup missing."""
+    logs_dir = tmp_path / "logs"
+    logs_dir.mkdir(parents=True)
+    audit = {
+        "run_id": 1,
+        "phase": "Phase_I",
+        "request_prompt": "Fallback Prompt",
+        "final_output_markdown": "Fallback Output",
+    }
+    (logs_dir / "run_001_audit.json").write_text(json.dumps(audit), encoding="utf-8")
+    manager = SessionManager(
+        cache_path=tmp_path / "missing.json",
+        backup_path=tmp_path / "missing.bak",
+        logs_dir=logs_dir,
+    )
+    loaded = manager.load_history(factor_x1=0)
+    assert len(loaded) == 2
+    assert loaded[0]["parts"][0]["text"] == "Fallback Prompt"
