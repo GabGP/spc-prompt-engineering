@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spc-project"
+version = "0.1.0"
+description = "Statistical Process Control & Prompt Engineering Optimization Engine"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "google-genai>=2.22.0",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "rich>=15.0.0",
+    "pypdf>=6.16.2",
+    "python-dotenv>=1.2.3",
+    "requests>=2.34.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "black>=26.5.1",
+    "ruff>=0.16.5",
+]
+
+[project.scripts]
+spc = "spc.ui.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spc"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "--cov=spc --cov-report=term-missing"
+
+
