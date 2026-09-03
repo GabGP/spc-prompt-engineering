@@ -30,22 +30,26 @@ class DefectReport(BaseModel):
 class RunRecord(BaseModel):
     """Schema for a single transformation run logged in main_event_log.csv."""
 
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     run_id: int
-    input_file: str = "unknown"
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     phase: str
+    operator: str
+    model_version: str = "gemini-2.5-flash"
+    input_file: str = "unknown"
     factor_x1: int = Field(ge=0, le=1)
     factor_x2: int = Field(ge=0, le=1)
-    cycle_time_sec: float = Field(gt=0.0)
     context_tokens: int = Field(default=0, ge=0)
+    instruction_tokens: int = Field(default=0, ge=0)
     page_tokens: int = Field(default=0, ge=0)
+    framing_tokens: int = Field(default=0, ge=0)
     prompt_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
     total_tokens: int = Field(default=0, ge=0)
     conforming: int = Field(ge=0, le=1)
     rework_cycles: int = Field(ge=0)
+    finish_reason: str = "STOP"
+    cycle_time_sec: float = Field(gt=0.0)
     assignable_cause: str = "NONE"
-    operator: str
 
     @field_validator("cycle_time_sec")
     @classmethod
@@ -56,23 +60,28 @@ class RunRecord(BaseModel):
     def to_csv_dict(self) -> dict[str, Any]:
         """Serialize record into an ordered dictionary matching CSV schema."""
         return {
-            "timestamp": self.timestamp.isoformat(),
             "run_id": self.run_id,
-            "input_file": self.input_file,
+            "timestamp": self.timestamp.isoformat(),
             "phase": self.phase,
+            "operator": self.operator,
+            "model_version": self.model_version,
+            "input_file": self.input_file,
             "factor_x1": self.factor_x1,
             "factor_x2": self.factor_x2,
-            "cycle_time_sec": self.cycle_time_sec,
             "context_tokens": self.context_tokens,
+            "instruction_tokens": self.instruction_tokens,
             "page_tokens": self.page_tokens,
+            "framing_tokens": self.framing_tokens,
             "prompt_tokens": self.prompt_tokens,
             "output_tokens": self.output_tokens,
             "total_tokens": self.total_tokens,
             "conforming": self.conforming,
             "rework_cycles": self.rework_cycles,
+            "finish_reason": self.finish_reason,
+            "cycle_time_sec": self.cycle_time_sec,
             "assignable_cause": self.assignable_cause,
-            "operator": self.operator,
         }
+
 
 
 class AuditPayload(BaseModel):
@@ -89,7 +98,7 @@ class AuditPayload(BaseModel):
     rework_count: int
     conforming: bool
     inspection_events: list[dict[str, Any]] = Field(default_factory=list)
-    raw_usage_metadata: dict[str, int] = Field(default_factory=dict)
+    raw_usage_metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ExecutionResult(BaseModel):

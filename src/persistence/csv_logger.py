@@ -6,22 +6,26 @@ from pathlib import Path
 from src.core.models import RunRecord
 
 CSV_FIELDNAMES: tuple[str, ...] = (
-    "timestamp",
     "run_id",
-    "input_file",
+    "timestamp",
     "phase",
+    "operator",
+    "model_version",
+    "input_file",
     "factor_x1",
     "factor_x2",
-    "cycle_time_sec",
     "context_tokens",
+    "instruction_tokens",
     "page_tokens",
+    "framing_tokens",
     "prompt_tokens",
     "output_tokens",
     "total_tokens",
     "conforming",
     "rework_cycles",
+    "finish_reason",
+    "cycle_time_sec",
     "assignable_cause",
-    "operator",
 )
 
 

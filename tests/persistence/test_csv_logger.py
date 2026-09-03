@@ -41,10 +41,10 @@ def test_csv_logger_creates_file_and_header(tmp_path: Path) -> None:
         row = next(reader)
 
     assert tuple(header) == CSV_FIELDNAMES
-    assert row[1] == "1"
-    assert row[2] == "page_001.pdf"
-    assert row[3] == "Phase_I"
-    assert row[15] == "analyst_test"
+    assert row[0] == "1"
+    assert row[2] == "Phase_I"
+    assert row[3] == "analyst_test"
+    assert row[5] == "page_001.pdf"
 
 
 def test_csv_logger_appends_without_duplicate_header(tmp_path: Path) -> None:
@@ -60,6 +60,8 @@ def test_csv_logger_appends_without_duplicate_header(tmp_path: Path) -> None:
 
     # 1 header line + 2 data rows = 3 lines
     assert len(lines) == 3
-    assert lines[0].startswith("timestamp,run_id,input_file")
-    assert ",1,page_001.pdf,Phase_I," in lines[1]
-    assert ",2,page_001.pdf,Phase_I," in lines[2]
+    assert lines[0].startswith("run_id,timestamp,phase")
+    assert lines[1].startswith("1,")
+    assert ",Phase_I,analyst_test,gemini-2.5-flash,page_001.pdf," in lines[1]
+    assert lines[2].startswith("2,")
+    assert ",Phase_I,analyst_test,gemini-2.5-flash,page_001.pdf," in lines[2]
