@@ -128,14 +128,26 @@ spc slice --book path/to/textbook.pdf --start 45 --end 105
 
 ---
 
-## 6. Git Hygiene & Data Privacy
+## 6. Documentation Hub
+
+Comprehensive documentation and operator manuals are available in the [`docs/`](docs/README.md) directory:
+
+* [**Documentation Hub (`docs/README.md`)**](docs/README.md): Index, persona-based reading paths, and cheat sheet.
+* [**Quick Start Guide (`docs/quickstart.md`)**](docs/quickstart.md): 5-minute setup, configuration, and first execution.
+* [**System Architecture (`docs/architecture.md`)**](docs/architecture.md): Formalization $S = (C,R,I,O,F)$, token invariants, Shewhart I-MR mechanics, and subsystem design.
+* [**Operator & Reference Manual (`docs/manual.md`)**](docs/manual.md): Complete CLI reference, 4-phase protocols, quality gates, and troubleshooting.
+* [**Google Sheets Webhook Setup (`docs/spreadsheet_webhook_setup.md`)**](docs/spreadsheet_webhook_setup.md): Real-time cloud streaming guide.
+
+---
+
+## 7. Git Hygiene & Data Privacy
 
 * **Raw Textbooks & PDFs:** All raw and sliced files in `data/raw/`, `data/inputs/`, and `data/outputs/` are ignored by `.gitignore`.
 * **Telemetry Ledger:** Only code, documentation, tests, and `data/main_event_log.csv` are tracked in Git.
 
 ---
 
-## 7. Project Architecture
+## 8. Project Architecture
 
 ```text
 spc-prompt-engineering/
@@ -150,7 +162,8 @@ spc-prompt-engineering/
 │   ├── ingestion/            # PDF page slicer & text density validator
 │   └── ui/                   # Rich terminal dashboard & CLI commands
 ├── tests/                    # Mirrored pytest suite (>80% coverage enforced)
+├── docs/                     # Comprehensive documentation, manuals, & architecture
 ├── data/                     # Ignored raw inputs/outputs & tracked main_event_log.csv
 ├── pyproject.toml            # Packaging configuration & pytest options
-└── README.md                 # Project documentation
+└── README.md                 # Project root documentation
 ```
