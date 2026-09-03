@@ -7,7 +7,7 @@ from src.config import Settings
 
 def test_default_settings() -> None:
     """Verify default settings instantiation and types."""
-    settings = Settings()
+    settings = Settings(_env_file=None)
     assert isinstance(settings.gemini_model, str)
     assert settings.gemini_model == "gemini-3.8-flash"
     assert isinstance(settings.base_dir, Path)
