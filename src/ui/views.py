@@ -70,6 +70,7 @@ def render_execution_summary(
     table.add_row("Instruction Tokens (Schema X2)", f"{r.instruction_tokens:,}")
     table.add_row("Page Tokens (Raw Input I)", f"{r.page_tokens:,}")
     table.add_row("Framing Tokens (API Protocol)", f"{r.framing_tokens:,}")
+    table.add_row("Rework Tokens (Reflection)", f"{r.rework_tokens:,}")
     table.add_row("Prompt Tokens (Total API Input W)", f"{r.prompt_tokens:,}")
     table.add_row("Output Tokens (Response O)", f"{r.output_tokens:,}")
     table.add_row("Total Tokens Processed", f"{r.total_tokens:,}")

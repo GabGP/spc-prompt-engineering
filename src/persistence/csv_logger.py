@@ -18,6 +18,7 @@ CSV_FIELDNAMES: tuple[str, ...] = (
     "instruction_tokens",
     "page_tokens",
     "framing_tokens",
+    "rework_tokens",
     "prompt_tokens",
     "output_tokens",
     "total_tokens",

@@ -62,6 +62,7 @@ def test_run_record_valid_and_csv_dict() -> None:
     assert row["phase"] == "Phase_I"
     assert row["factor_x1"] == 0
     assert row["factor_x2"] == 0
+    assert row["rework_tokens"] == 0
     assert row["cycle_time_sec"] == 6.1235
     assert row["conforming"] == 1
     assert row["operator"] == "test_analyst"

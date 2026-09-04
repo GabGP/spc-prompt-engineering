@@ -27,6 +27,19 @@ class DefectReport(BaseModel):
         return "\n".join(f"- {reason}" for reason in self.defect_reasons)
 
 
+
+class IterationRecord(BaseModel):
+    """Telemetry and inspection record for an individual attempt or rework reflection."""
+
+    iteration: int
+    prompt_text: str
+    response_text: str
+    prompt_tokens: int = 0
+    output_tokens: int = 0
+    conforming: bool
+    defects: list[str] = Field(default_factory=list)
+
+
 class RunRecord(BaseModel):
     """Schema for a single transformation run logged in main_event_log.csv."""
 
@@ -42,6 +55,7 @@ class RunRecord(BaseModel):
     instruction_tokens: int = Field(default=0, ge=0)
     page_tokens: int = Field(default=0, ge=0)
     framing_tokens: int = Field(default=0, ge=0)
+    rework_tokens: int = Field(default=0, ge=0)
     prompt_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
     total_tokens: int = Field(default=0, ge=0)
@@ -72,6 +86,7 @@ class RunRecord(BaseModel):
             "instruction_tokens": self.instruction_tokens,
             "page_tokens": self.page_tokens,
             "framing_tokens": self.framing_tokens,
+            "rework_tokens": self.rework_tokens,
             "prompt_tokens": self.prompt_tokens,
             "output_tokens": self.output_tokens,
             "total_tokens": self.total_tokens,
@@ -81,7 +96,6 @@ class RunRecord(BaseModel):
             "cycle_time_sec": self.cycle_time_sec,
             "assignable_cause": self.assignable_cause,
         }
-
 
 
 class AuditPayload(BaseModel):
@@ -99,6 +113,8 @@ class AuditPayload(BaseModel):
     rework_count: int
     conforming: bool
     inspection_events: list[dict[str, Any]] = Field(default_factory=list)
+    iterations: list[IterationRecord] = Field(default_factory=list)
+    cumulative_tokens: dict[str, int] = Field(default_factory=dict)
     raw_usage_metadata: dict[str, Any] = Field(default_factory=dict)
 
 
