@@ -24,7 +24,7 @@ The engine organizes runtime data into dedicated directories:
 * `data/inputs/`: Holds sliced 1-indexed target page PDFs (`page_001.pdf`, `page_002.pdf`, ...).
 * `data/outputs/`: Holds accepted transformation Markdown files (`run_001.md`, ...).
 * `data/logs/`: Holds full forensic JSON audit payloads (`run_001_audit.json`, ...).
-* `data/main_event_log.csv`: Primary 20-column CSV ledger tracking all runs.
+* `data/main_event_log.csv`: Primary 21-column CSV ledger tracking all runs.
 * `.cache/`: Local cache directory storing active multi-turn conversation sessions.
 
 ---
@@ -269,7 +269,7 @@ If an output fails any rule:
 
 ## 5. Ledger & Telemetry Specification
 
-The CSV ledger at `data/main_event_log.csv` records 20 standardized columns:
+The CSV ledger at `data/main_event_log.csv` records 21 standardized columns:
 
 | Col # | Field Name | Type | Example | Description |
 | :-: | :--- | :---: | :--- | :--- |
@@ -284,15 +284,16 @@ The CSV ledger at `data/main_event_log.csv` records 20 standardized columns:
 | 9 | `context_tokens` | Integer | `3410` | Backlog WIP tokens from prior turns. |
 | 10 | `instruction_tokens` | Integer | `32` | Prompt template tokens ($\approx 32$ Bare, $\approx 380$ SOP). |
 | 11 | `page_tokens` | Integer | `465` | Raw textbook page text tokens. |
-| 12 | `framing_tokens` | Integer | `18` | Protocol framing & delimiter tokens ($\epsilon$). |
-| 13 | `prompt_tokens` | Integer | `3925` | Total forward-pass API input tokens. |
-| 14 | `output_tokens` | Integer | `280` | Generated response candidate tokens. |
-| 15 | `total_tokens` | Integer | `4205` | Total transaction tokens (`prompt + output`). |
-| 16 | `conforming` | Integer | `1` | First-pass quality status (`1`=Conforming, `0`=Defect). |
-| 17 | `rework_cycles` | Integer | `0` | Number of reflection prompts dispatched ($P$). |
-| 18 | `finish_reason` | String | `STOP` | Provider finish reason (`STOP`, `MAX_TOKENS`, etc.). |
-| 19 | `cycle_time_sec` | Float | `6.4215` | **Primary Response ($Y$):** Cycle time in seconds. |
-| 20 | `assignable_cause` | String | `NONE` | Special cause annotation (`NONE` if in-control). |
+| 12 | `framing_tokens` | Integer | `18` | Pure protocol framing & delimiter tokens ($\epsilon$). |
+| 13 | `rework_tokens` | Integer | `0` | Input tokens added by rework loops ($0$ if first-pass conforming). |
+| 14 | `prompt_tokens` | Integer | `3925` | Total forward-pass API input tokens of the final attempt. |
+| 15 | `output_tokens` | Integer | `280` | Generated response candidate tokens for the accepted output. |
+| 16 | `total_tokens` | Integer | `4205` | Final transaction footprint (`prompt + output`). |
+| 17 | `conforming` | Integer | `1` | Conformance status (`1`=Conforming, `0`=Defect). |
+| 18 | `rework_cycles` | Integer | `0` | Number of reflection prompts dispatched ($P$). |
+| 19 | `finish_reason` | String | `STOP` | Provider finish reason (`STOP`, `MAX_TOKENS`, etc.). |
+| 20 | `cycle_time_sec` | Float | `6.4215` | **Primary Response ($Y$):** Cycle time in seconds. |
+| 21 | `assignable_cause` | String | `NONE` | Special cause annotation (`NONE` if in-control). |
 
 ---
 

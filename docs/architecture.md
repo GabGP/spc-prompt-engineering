@@ -173,12 +173,13 @@ src/
 │   ├── gemini_client.py   # Wraps google.genai.Client, handles chat and token counting
 │   ├── mock_client.py     # Offline simulation client for staged testing
 │   ├── mock_responses.py  # Staged conforming and defective markdown payloads
+│   ├── telemetry_builder.py # Computes token invariants and builds RunRecord/AuditPayload
 │   └── executor.py        # Orchestrates dispatch, timing, rework loop, and logging
 ├── validation/
 │   ├── rules.py           # Pure deterministic regex inspection functions
 │   └── inspector.py       # QualityInspector running the 3 Go/No-Go inspection gates
 ├── persistence/
-│   ├── csv_logger.py      # Appends RunRecord to data/main_event_log.csv (20 columns)
+│   ├── csv_logger.py      # Appends RunRecord to data/main_event_log.csv (21 columns)
 │   ├── audit_logger.py    # Writes forensic JSON audits and accepted markdown outputs
 │   └── webhook_client.py  # Real-time HTTP POST dispatcher to Google Apps Script
 └── ui/
@@ -197,28 +198,29 @@ src/
 
 In LLM multi-turn interactions, input tokens are not monolithic. The engine formalizes token accounting into 7 distinct metrics, maintaining mathematical invariance:
 
-$$\mathbf{prompt\_tokens}_{\text{ (API Ground Truth)}} = \mathbf{context\_tokens} + \mathbf{instruction\_tokens} + \mathbf{page\_tokens} + \boldsymbol{\epsilon}_{\text{framing}}$$
+$$\mathbf{prompt\_tokens}_{\text{ (API Ground Truth)}} = \mathbf{context\_tokens} + \mathbf{instruction\_tokens} + \mathbf{page\_tokens} + \mathbf{rework\_tokens} + \boldsymbol{\epsilon}_{\text{framing}}$$
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                             Total API Prompt Tokens (Input WIP W)                           │
-├───────────────────────┬─────────────────────────┬──────────────────────┬────────────────────┤
-│ context_tokens (WIP)  │ instruction_tokens (X₂) │  page_tokens (Input) │ ε_framing (Markup) │
-├───────────────────────┼─────────────────────────┼──────────────────────┼────────────────────┤
-│ • Factor X₁           │ • Factor X₂             │ • Input Material (I) │ • Role markers     │
-│ • Prior run history   │ • Bare Prompt (~32 t)   │ • Extracted PDF text │ • Turn wrappers    │
-│ • 0 in Phase II/III   │ • SOP Schema (~380 t)   │   (~300–600 tokens)  │ • Delimiters       │
-└───────────────────────┴─────────────────────────┴──────────────────────┴────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                Total API Prompt Tokens (Input Load W)                                  │
+├──────────────────────┬─────────────────────────┬──────────────────────┬────────────────┬───────────────┤
+│ context_tokens (WIP) │ instruction_tokens (X₂) │  page_tokens (Input) │  rework_tokens │   ε_framing   │
+├──────────────────────┼─────────────────────────┼──────────────────────┼────────────────┼───────────────┤
+│ • Factor X₁          │ • Factor X₂             │ • Input Material (I) │ • Rework loop  │ • Role tags   │
+│ • Full past history  │ • Bare Prompt (~20 t)   │ • Sliced PDF text    │   overhead     │ • Boundaries  │
+│ • 0 in Phase II/III  │ • SOP Schema (~380 t)   │   (~300–600 tokens)  │ • 0 if Pass #0 │   (~15–25 t)  │
+└──────────────────────┴─────────────────────────┴──────────────────────┴────────────────┴───────────────┘
 ```
 
 1. **`context_tokens` ($X_1$ WIP Buffer):** Tokens residing in conversation history before the run begins. Captured via `client.count_tokens(history)` when $X_1 = 0$, exactly $0$ when $X_1 = 1$.
-2. **`instruction_tokens` ($X_2$ Schema Overhead):** Tokens in the prompt template ($\approx 32$ for Bare Prompt, $\approx 380$ for SOP Schema). Isolates the marginal cost of schema injection.
+2. **`instruction_tokens` ($X_2$ Schema Overhead):** Tokens in the prompt template ($\approx 20$ for Bare Prompt, $\approx 380$ for SOP Schema). Isolates the marginal cost of schema injection.
 3. **`page_tokens` ($I$ Raw Input Material):** Tokens in the isolated raw textbook page text. Serves as a covariate check to verify uniform input size ($\pm 10\%$).
-4. **`framing_tokens` ($\epsilon_{\text{framing}}$ Protocol Overhead):** Provider turn formatting (`<start_of_turn>user`, boundaries). Calculated as:
-   $$\boldsymbol{\epsilon}_{\text{framing}} = \max\left(0, \, \mathbf{prompt\_tokens} - (\mathbf{context\_tokens} + \mathbf{instruction\_tokens} + \mathbf{page\_tokens})\right)$$
-5. **`prompt_tokens` ($W_{\text{in}}$ Total Input Load):** Direct API telemetry from `response.usage_metadata.prompt_token_count`.
-6. **`output_tokens` ($O$ Generation Yield):** Direct API telemetry from `response.usage_metadata.candidates_token_count`.
-7. **`total_tokens` ($W_{\text{total}}$ System Footprint):** $\mathbf{prompt\_tokens} + \mathbf{output\_tokens}$.
+4. **`framing_tokens` ($\epsilon_{\text{framing}}$ Protocol Overhead):** Provider turn formatting (`<start_of_turn>user`, boundaries). Calculated from the initial turn $P_0$ as:
+   $$\boldsymbol{\epsilon}_{\text{framing}} = \max\left(0, \, P_0 - (\mathbf{context\_tokens} + \mathbf{instruction\_tokens} + \mathbf{page\_tokens})\right)$$
+5. **`rework_tokens` ($W_{\text{rework}}$ Rework Overhead):** Additional input tokens injected during dynamic reflection rework loops ($P_{\text{final}} - P_0$). Equals $0$ when conforming on the first attempt.
+6. **`prompt_tokens` ($W_{\text{in}}$ Total Input Load):** Direct API telemetry from `response.usage_metadata.prompt_token_count` on the final accepted attempt.
+7. **`output_tokens` ($O$ Generation Yield):** Direct API telemetry from `response.usage_metadata.candidates_token_count` of the accepted output.
+8. **`total_tokens` ($W_{\text{total}}$ System Footprint):** $\mathbf{prompt\_tokens} + \mathbf{output\_tokens}$.
 
 ---
 
@@ -226,10 +228,11 @@ $$\mathbf{prompt\_tokens}_{\text{ (API Ground Truth)}} = \mathbf{context\_tokens
 
 The `SessionManager` governs state persistence across experimental runs:
 
-* **Accumulating Buffer ($X_1 = 0$, Phase I):**
-  - Following each conforming transformation, the run's prompt and output are appended to `.cache/session_cache.json`.
+* **Accumulating Buffer ($X_1 = 0$, Phase I — Option A Multi-Turn Transcript):**
+  - Following each conforming transformation, the full conversation transcript (including any intermediate defective drafts and rework reflection prompts) is appended to `.cache/session_cache.json`.
   - To prevent accidental state loss, every write is mirrored atomically to `.cache/session_cache.bak`.
-  - In the event of cache corruption, `SessionManager.rebuild_from_audit_logs()` can automatically reconstruct the exact multi-turn conversation from the forensic audit JSON files in `data/logs/`.
+  - If a run exhausts all rework attempts and fails, defective outputs are **not** committed to the session cache, preventing context corruption.
+  - In the event of cache corruption, `SessionManager.rebuild_from_audit_logs()` automatically reconstructs the exact multi-turn conversation from forensic JSON audit files in `data/logs/`.
 * **Zero-WIP Policy ($X_1 = 1$, Phases II–IV):**
   - The context buffer is cleared before each run.
   - History passed to `GeminiClient.create_chat()` is empty (`[]`).
@@ -271,7 +274,7 @@ Every transformation run commits telemetry to three synchronized persistence tie
 [Engine Execution Completed]
        │
        ├───> 1. CSV Ledger (data/main_event_log.csv)
-       │        • 20 standardized, self-documenting columns
+       │        • 21 standardized, self-documenting columns
        │        • Machine-readable for R, Python, and SPC charting tools
        │
        ├───> 2. Forensic Audit Log (data/logs/run_XXX_audit.json)
@@ -282,7 +285,7 @@ Every transformation run commits telemetry to three synchronized persistence tie
        │        • Final clean markdown documentation generated by the LLM
        │
        └───> 4. Cloud Webhook Dispatch (Optional: Google Sheets)
-                • Asynchronous HTTP POST transmitting 20 metrics in real time
+                • Asynchronous HTTP POST transmitting 21 metrics in real time
                 • Allows live remote monitoring and classroom dashboards
 ```
 

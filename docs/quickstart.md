@@ -198,7 +198,7 @@ After a run finishes, your artifacts are structured as follows:
 | Path | Description | Tracked in Git |
 | :--- | :--- | :---: |
 | `data/` | Entire runtime directory (inputs, outputs, logs, `main_event_log.csv`) | No (Ignored via `.gitignore`) |
-| `data/main_event_log.csv` | Primary 20-column telemetry ledger | No (Ignored via `.gitignore`) |
+| `data/main_event_log.csv` | Primary 21-column telemetry ledger | No (Ignored via `.gitignore`) |
 | `data/outputs/run_XXX.md` | Accepted structured Markdown artifact | No (Ignored via `.gitignore`) |
 | `data/logs/run_XXX_audit.json` | Forensic audit trail (prompts, timing, rework history) | No (Ignored via `.gitignore`) |
 | `.cache/session_cache.json` | Active multi-turn conversation context buffer | No (Ignored via `.gitignore`) |
