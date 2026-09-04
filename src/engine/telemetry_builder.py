@@ -41,13 +41,14 @@ class TelemetryBuilder:
         finish_reason: str,
         cycle_time: float,
         assignable_cause: str,
+        thinking_tokens: int = 0,
     ) -> RunRecord:
-        """Build standardized 21-column RunRecord."""
+        """Build standardized 22-column RunRecord."""
         framing = cls.calculate_framing_tokens(
             initial_prompt_tokens, context_tokens, instruction_tokens, page_tokens
         )
         rework = max(0, final_prompt_tokens - initial_prompt_tokens) if rework_count > 0 else 0
-        total = final_prompt_tokens + final_output_tokens
+        total = final_prompt_tokens + final_output_tokens + thinking_tokens
         cause = (
             f"API_{finish_reason}"
             if finish_reason != "STOP" and assignable_cause == "NONE"
@@ -70,6 +71,7 @@ class TelemetryBuilder:
             rework_tokens=rework,
             prompt_tokens=final_prompt_tokens,
             output_tokens=final_output_tokens,
+            thinking_tokens=thinking_tokens,
             total_tokens=total,
             conforming=1 if defect_report.is_conforming else 0,
             rework_cycles=rework_count,
@@ -89,10 +91,12 @@ class TelemetryBuilder:
         """Build full forensic AuditPayload including all iteration attempts."""
         cum_prompt = sum(it.prompt_tokens for it in iterations)
         cum_output = sum(it.output_tokens for it in iterations)
+        cum_thinking = sum(it.thinking_tokens for it in iterations)
         cumulative = {
             "total_api_prompt_tokens": cum_prompt,
             "total_api_output_tokens": cum_output,
-            "total_api_tokens": cum_prompt + cum_output,
+            "total_api_thinking_tokens": cum_thinking,
+            "total_api_tokens": cum_prompt + cum_output + cum_thinking,
         }
 
         return AuditPayload(
@@ -118,6 +122,7 @@ class TelemetryBuilder:
                 "rework_tokens": record.rework_tokens,
                 "prompt_tokens": record.prompt_tokens,
                 "output_tokens": record.output_tokens,
+                "thinking_tokens": record.thinking_tokens,
                 "total_tokens": record.total_tokens,
                 "finish_reason": record.finish_reason,
                 "model_version": record.model_version,

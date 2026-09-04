@@ -81,7 +81,7 @@ class TransformationExecutor:
         }]
         iterations: list[IterationRecord] = [IterationRecord(
             iteration=0, prompt_text=prompt, response_text=current_text,
-            prompt_tokens=init_p, output_tokens=init_o,
+            prompt_tokens=init_p, output_tokens=init_o, thinking_tokens=tokens.get("thinking_tokens", 0),
             conforming=defect_report.is_conforming, defects=defect_report.defect_reasons,
         )]
         turns: list[dict[str, Any]] = [
@@ -105,6 +105,7 @@ class TransformationExecutor:
             iterations.append(IterationRecord(
                 iteration=rework_count, prompt_text=rework_prompt, response_text=current_text,
                 prompt_tokens=final_p, output_tokens=final_o,
+                thinking_tokens=r_tokens.get("thinking_tokens", 0),
                 conforming=defect_report.is_conforming, defects=defect_report.defect_reasons,
             ))
             turns.extend([
@@ -122,7 +123,8 @@ class TransformationExecutor:
             run_id=run_id, phase=phase, operator=operator, model_ver=model_ver,
             input_filename=input_filename, factor_x1=factor_x1, factor_x2=factor_x2,
             context_tokens=ctx_tokens, instruction_tokens=instruction_tokens, page_tokens=page_tokens,
-            initial_prompt_tokens=init_p, final_prompt_tokens=final_p, final_output_tokens=final_o,
+            initial_prompt_tokens=init_p, final_prompt_tokens=final_p,
+            final_output_tokens=final_o, thinking_tokens=sum(it.thinking_tokens for it in iterations),
             defect_report=defect_report, rework_count=rework_count, finish_reason=finish_reason,
             cycle_time=cycle_time, assignable_cause=assignable_cause,
         )

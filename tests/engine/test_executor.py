@@ -90,8 +90,8 @@ def test_executor_rework_reflection_loop_recovery(tmp_path: Path) -> None:
 
     # First attempt fails (non-conforming); second attempt succeeds
     mock_gemini.send_prompt.side_effect = [
-        (NON_CONFORMING_OUTPUT, {"prompt_tokens": 400, "output_tokens": 100}),
-        (CONFORMING_OUTPUT, {"prompt_tokens": 600, "output_tokens": 250}),
+        (NON_CONFORMING_OUTPUT, {"prompt_tokens": 400, "output_tokens": 100, "thinking_tokens": 50}),
+        (CONFORMING_OUTPUT, {"prompt_tokens": 600, "output_tokens": 250, "thinking_tokens": 75}),
     ]
 
     csv_log = tmp_path / "main_event_log.csv"
@@ -118,14 +118,17 @@ def test_executor_rework_reflection_loop_recovery(tmp_path: Path) -> None:
     assert result.record.rework_cycles == 1
     assert result.record.conforming == 1
     assert result.record.prompt_tokens == 600  # prompt tokens of final accepted iteration
-    assert result.record.output_tokens == 250  # output tokens of final accepted response
+    assert result.record.thinking_tokens == 125  # 50 + 75 cumulative
     assert result.record.rework_tokens == 200  # 600 - 400
-    assert result.record.total_tokens == 850
+    assert result.record.total_tokens == 975   # 600 + 250 + 125
     assert len(result.audit_payload.inspection_events) == 2
     assert len(result.audit_payload.iterations) == 2
+    assert result.audit_payload.iterations[0].thinking_tokens == 50
+    assert result.audit_payload.iterations[1].thinking_tokens == 75
     assert result.audit_payload.cumulative_tokens["total_api_prompt_tokens"] == 1000
     assert result.audit_payload.cumulative_tokens["total_api_output_tokens"] == 350
-    assert result.audit_payload.cumulative_tokens["total_api_tokens"] == 1350
+    assert result.audit_payload.cumulative_tokens["total_api_thinking_tokens"] == 125
+    assert result.audit_payload.cumulative_tokens["total_api_tokens"] == 1475
 
 
 def test_executor_exceeding_max_reworks(tmp_path: Path) -> None:

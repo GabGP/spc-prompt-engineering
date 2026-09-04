@@ -46,6 +46,7 @@ def test_build_run_record_first_pass() -> None:
         finish_reason="STOP",
         cycle_time=5.2345,
         assignable_cause="NONE",
+        thinking_tokens=100,
     )
 
     assert record.run_id == 1
@@ -53,7 +54,8 @@ def test_build_run_record_first_pass() -> None:
     assert record.rework_tokens == 0
     assert record.prompt_tokens == 438
     assert record.output_tokens == 250
-    assert record.total_tokens == 688
+    assert record.thinking_tokens == 100
+    assert record.total_tokens == 788
     assert record.conforming == 1
     assert record.rework_cycles == 0
     assert record.assignable_cause == "NONE"
@@ -61,6 +63,7 @@ def test_build_run_record_first_pass() -> None:
     csv_dict = record.to_csv_dict()
     assert "rework_tokens" in csv_dict
     assert csv_dict["rework_tokens"] == 0
+    assert csv_dict["thinking_tokens"] == 100
 
 
 def test_build_run_record_with_rework() -> None:
@@ -126,6 +129,7 @@ def test_build_audit_payload_cumulative_accounting() -> None:
             response_text="Defective Output",
             prompt_tokens=438,
             output_tokens=450,
+            thinking_tokens=80,
             conforming=False,
             defects=["Missing header"],
         ),
@@ -135,6 +139,7 @@ def test_build_audit_payload_cumulative_accounting() -> None:
             response_text="Conforming Output",
             prompt_tokens=1950,
             output_tokens=300,
+            thinking_tokens=120,
             conforming=True,
             defects=[],
         ),
@@ -151,5 +156,7 @@ def test_build_audit_payload_cumulative_accounting() -> None:
     assert len(payload.iterations) == 2
     assert payload.cumulative_tokens["total_api_prompt_tokens"] == 2388  # 438 + 1950
     assert payload.cumulative_tokens["total_api_output_tokens"] == 750   # 450 + 300
-    assert payload.cumulative_tokens["total_api_tokens"] == 3138
+    assert payload.cumulative_tokens["total_api_thinking_tokens"] == 200 # 80 + 120
+    assert payload.cumulative_tokens["total_api_tokens"] == 3338
     assert payload.raw_usage_metadata["rework_tokens"] == 1512
+    assert payload.raw_usage_metadata["thinking_tokens"] == 0
