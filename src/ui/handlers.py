@@ -20,6 +20,7 @@ from src.state.run_tracker import RunTracker
 from src.state.session_manager import SessionManager
 from src.ui.error_view import render_api_error
 from src.ui.slice_handler import handle_slice
+from src.ui.status_helper import resolve_status_context_tokens
 from src.ui.views import (
     default_console,
     render_execution_summary,
@@ -120,7 +121,7 @@ def handle_status(args: argparse.Namespace, console: Console | None = None) -> i
         phase_str, x1, x2 = "Outside Window", 0, 0
 
     turn_count = session_mgr.get_history_turn_count(factor_x1=x1)
-    ctx_tokens = len(session_mgr.load_history(factor_x1=0)) * 260 if x1 == 0 else 0
+    ctx_tokens = resolve_status_context_tokens(session_mgr, x1, settings)
     render_status_dashboard(
         phase=phase_str, factor_x1=x1, factor_x2=x2,
         total_runs=tracker.get_total_runs(), next_run_id=tracker.get_next_run_id(),
