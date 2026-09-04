@@ -73,6 +73,7 @@ def render_execution_summary(
     table.add_row("Rework Tokens (Reflection)", f"{r.rework_tokens:,}")
     table.add_row("Prompt Tokens (Total API Input W)", f"{r.prompt_tokens:,}")
     table.add_row("Output Tokens (Response O)", f"{r.output_tokens:,}")
+    table.add_row("Thinking Tokens (Reasoning)", f"{r.thinking_tokens:,}")
     table.add_row("Total Tokens Processed", f"{r.total_tokens:,}")
     table.add_row("Rework Iterations (P)", str(r.rework_cycles))
     st_style = "bold green" if r.conforming else "bold red"
@@ -142,5 +143,3 @@ def render_slice_summary(
         sample = f"{created_files[0].name} ... {created_files[-1].name}"
         table.add_row("Sliced Artifacts", f"{sample} ({len(created_files)} files)")
     c.print(table)
-
-

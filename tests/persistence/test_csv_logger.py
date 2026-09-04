@@ -42,6 +42,8 @@ def test_csv_logger_creates_file_and_header(tmp_path: Path) -> None:
 
     assert tuple(header) == CSV_FIELDNAMES
     assert "rework_tokens" in header
+    assert "thinking_tokens" in header
+    assert header[15] == "thinking_tokens"
     assert row[0] == "1"
     assert row[2] == "Phase_I"
     assert row[3] == "analyst_test"
