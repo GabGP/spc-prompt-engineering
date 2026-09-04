@@ -49,6 +49,8 @@ def test_run_record_valid_and_csv_dict() -> None:
         cycle_time_sec=6.123456,
         prompt_tokens=520,
         output_tokens=310,
+        thinking_tokens=140,
+        total_tokens=970,
         conforming=1,
         rework_cycles=0,
         assignable_cause="NONE",
@@ -56,12 +58,14 @@ def test_run_record_valid_and_csv_dict() -> None:
     )
     # Verify precision rounding
     assert record.cycle_time_sec == 6.1235
+    assert record.thinking_tokens == 140
 
     row = record.to_csv_dict()
     assert row["run_id"] == 1
     assert row["phase"] == "Phase_I"
     assert row["factor_x1"] == 0
     assert row["factor_x2"] == 0
+    assert row["thinking_tokens"] == 140
     assert row["rework_tokens"] == 0
     assert row["cycle_time_sec"] == 6.1235
     assert row["conforming"] == 1

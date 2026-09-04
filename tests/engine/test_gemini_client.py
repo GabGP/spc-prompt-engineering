@@ -13,6 +13,7 @@ def test_extract_token_metadata_missing_usage() -> None:
     assert extract_token_metadata(None) == {
         "prompt_tokens": 0,
         "output_tokens": 0,
+        "thinking_tokens": 0,
         "total_tokens": 0,
         "finish_reason": "STOP",
         "model_version": "",
@@ -20,6 +21,7 @@ def test_extract_token_metadata_missing_usage() -> None:
     assert extract_token_metadata(SimpleNamespace()) == {
         "prompt_tokens": 0,
         "output_tokens": 0,
+        "thinking_tokens": 0,
         "total_tokens": 0,
         "finish_reason": "STOP",
         "model_version": "",
@@ -31,13 +33,15 @@ def test_extract_token_metadata_present() -> None:
     usage = SimpleNamespace(
         prompt_token_count=250,
         candidates_token_count=120,
-        total_token_count=370,
+        thoughts_token_count=50,
+        total_token_count=420,
     )
     resp = SimpleNamespace(usage_metadata=usage)
     tokens = extract_token_metadata(resp)
     assert tokens["prompt_tokens"] == 250
     assert tokens["output_tokens"] == 120
-    assert tokens["total_tokens"] == 370
+    assert tokens["thinking_tokens"] == 50
+    assert tokens["total_tokens"] == 420
 
 
 def test_extract_token_metadata_with_candidates_and_model_version() -> None:

@@ -36,6 +36,7 @@ class IterationRecord(BaseModel):
     response_text: str
     prompt_tokens: int = 0
     output_tokens: int = 0
+    thinking_tokens: int = 0
     conforming: bool
     defects: list[str] = Field(default_factory=list)
 
@@ -58,6 +59,7 @@ class RunRecord(BaseModel):
     rework_tokens: int = Field(default=0, ge=0)
     prompt_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
+    thinking_tokens: int = Field(default=0, ge=0)
     total_tokens: int = Field(default=0, ge=0)
     conforming: int = Field(ge=0, le=1)
     rework_cycles: int = Field(ge=0)
@@ -89,6 +91,7 @@ class RunRecord(BaseModel):
             "rework_tokens": self.rework_tokens,
             "prompt_tokens": self.prompt_tokens,
             "output_tokens": self.output_tokens,
+            "thinking_tokens": self.thinking_tokens,
             "total_tokens": self.total_tokens,
             "conforming": self.conforming,
             "rework_cycles": self.rework_cycles,

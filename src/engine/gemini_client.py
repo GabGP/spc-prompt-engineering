@@ -11,7 +11,8 @@ def extract_token_metadata(response: Any) -> dict[str, Any]:
     usage = getattr(response, "usage_metadata", None)
     prompt = getattr(usage, "prompt_token_count", 0) or 0 if usage else 0
     output = getattr(usage, "candidates_token_count", 0) or 0 if usage else 0
-    total = getattr(usage, "total_token_count", 0) or (prompt + output) if usage else 0
+    thinking = getattr(usage, "thoughts_token_count", 0) or 0 if usage else 0
+    total = getattr(usage, "total_token_count", 0) or (prompt + output + thinking) if usage else 0
 
     finish_reason = "STOP"
     candidates = getattr(response, "candidates", None)
@@ -24,6 +25,7 @@ def extract_token_metadata(response: Any) -> dict[str, Any]:
     return {
         "prompt_tokens": prompt,
         "output_tokens": output,
+        "thinking_tokens": thinking,
         "total_tokens": total,
         "finish_reason": finish_reason,
         "model_version": model_version,
