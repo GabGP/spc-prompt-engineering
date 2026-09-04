@@ -198,3 +198,28 @@ def test_load_history_recovers_from_audit_logs_fallback(tmp_path: Path) -> None:
     loaded = manager.load_history(factor_x1=0)
     assert len(loaded) == 2
     assert loaded[0]["parts"][0]["text"] == "Fallback Prompt"
+
+
+def test_rebuild_from_audit_logs_with_iterations(tmp_path: Path) -> None:
+    """Verify reconstruction of full multi-turn transcript when iterations are present."""
+    logs_dir = tmp_path / "logs"
+    logs_dir.mkdir(parents=True)
+    cache_file = tmp_path / ".session_cache.json"
+    manager = SessionManager(cache_path=cache_file)
+
+    audit = {
+        "run_id": 1,
+        "phase": "Phase_I",
+        "iterations": [
+            {"prompt_text": "Initial Prompt", "response_text": "Defective"},
+            {"prompt_text": "Rework Prompt", "response_text": "Conforming"},
+        ],
+    }
+    (logs_dir / "run_001_audit.json").write_text(json.dumps(audit), encoding="utf-8")
+
+    history = manager.rebuild_from_audit_logs(logs_dir, phase="Phase_I")
+    assert len(history) == 4
+    assert history[0]["parts"][0]["text"] == "Initial Prompt"
+    assert history[1]["parts"][0]["text"] == "Defective"
+    assert history[2]["parts"][0]["text"] == "Rework Prompt"
+    assert history[3]["parts"][0]["text"] == "Conforming"

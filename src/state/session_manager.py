@@ -113,10 +113,16 @@ class SessionManager:
         entries.sort(key=lambda x: x[0])
         history: list[dict[str, Any]] = []
         for _, audit in entries:
-            prompt = audit.get("request_prompt") or f"Input: {audit.get('input_file', '')}"
-            output = audit.get("final_output_markdown", "")
-            history.append({"role": "user", "parts": [{"text": prompt}]})
-            history.append({"role": "model", "parts": [{"text": output}]})
+            iterations = audit.get("iterations")
+            if iterations and isinstance(iterations, list):
+                for it in iterations:
+                    history.append({"role": "user", "parts": [{"text": it.get("prompt_text", "")}]})
+                    history.append({"role": "model", "parts": [{"text": it.get("response_text", "")}]})
+            else:
+                prompt = audit.get("request_prompt") or f"Input: {audit.get('input_file', '')}"
+                output = audit.get("final_output_markdown", "")
+                history.append({"role": "user", "parts": [{"text": prompt}]})
+                history.append({"role": "model", "parts": [{"text": output}]})
 
         if history:
             self.save_history(history, factor_x1=0)
