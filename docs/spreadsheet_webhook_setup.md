@@ -49,6 +49,7 @@ const HEADERS = [
   "rework_tokens",
   "prompt_tokens",
   "output_tokens",
+  "thinking_tokens",
   "total_tokens",
   "conforming",
   "rework_cycles",
@@ -130,7 +131,7 @@ cp .env.example .env
 Run the following command in PowerShell to send a synthetic test record:
 
 ```powershell
-Invoke-RestMethod -Uri "YOUR_WEBHOOK_URL" -Method Post -ContentType "application/json" -Body '{"run_id": 0, "timestamp": "2026-09-03T00:00:00Z", "phase": "Test", "operator": "verify", "model_version": "test", "input_file": "none", "factor_x1": 0, "factor_x2": 0, "context_tokens": 0, "instruction_tokens": 0, "page_tokens": 0, "framing_tokens": 0, "prompt_tokens": 0, "output_tokens": 0, "total_tokens": 0, "conforming": 1, "rework_cycles": 0, "finish_reason": "STOP", "cycle_time_sec": 1.2345, "assignable_cause": "NONE"}'
+Invoke-RestMethod -Uri "YOUR_WEBHOOK_URL" -Method Post -ContentType "application/json" -Body '{"run_id": 0, "timestamp": "2026-09-03T00:00:00Z", "phase": "Test", "operator": "verify", "model_version": "test", "input_file": "none", "factor_x1": 0, "factor_x2": 0, "context_tokens": 0, "instruction_tokens": 0, "page_tokens": 0, "framing_tokens": 0, "rework_tokens": 0, "prompt_tokens": 0, "output_tokens": 0, "thinking_tokens": 0, "total_tokens": 0, "conforming": 1, "rework_cycles": 0, "finish_reason": "STOP", "cycle_time_sec": 1.2345, "assignable_cause": "NONE"}'
 ```
 
 ### Option B: Python Test

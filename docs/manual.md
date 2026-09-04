@@ -269,7 +269,7 @@ If an output fails any rule:
 
 ## 5. Ledger & Telemetry Specification
 
-The CSV ledger at `data/main_event_log.csv` records 21 standardized columns:
+The CSV ledger at `data/main_event_log.csv` records 22 standardized columns:
 
 | Col # | Field Name | Type | Example | Description |
 | :-: | :--- | :---: | :--- | :--- |
@@ -288,12 +288,13 @@ The CSV ledger at `data/main_event_log.csv` records 21 standardized columns:
 | 13 | `rework_tokens` | Integer | `0` | Input tokens added by rework loops ($0$ if first-pass conforming). |
 | 14 | `prompt_tokens` | Integer | `3925` | Total forward-pass API input tokens of the final attempt. |
 | 15 | `output_tokens` | Integer | `280` | Generated response candidate tokens for the accepted output. |
-| 16 | `total_tokens` | Integer | `4205` | Final transaction footprint (`prompt + output`). |
-| 17 | `conforming` | Integer | `1` | Conformance status (`1`=Conforming, `0`=Defect). |
-| 18 | `rework_cycles` | Integer | `0` | Number of reflection prompts dispatched ($P$). |
-| 19 | `finish_reason` | String | `STOP` | Provider finish reason (`STOP`, `MAX_TOKENS`, etc.). |
-| 20 | `cycle_time_sec` | Float | `6.4215` | **Primary Response ($Y$):** Cycle time in seconds. |
-| 21 | `assignable_cause` | String | `NONE` | Special cause annotation (`NONE` if in-control). |
+| 16 | `thinking_tokens` | Integer | `142` | Cumulative model reasoning/thinking tokens across all attempts in run. |
+| 17 | `total_tokens` | Integer | `4347` | Total transaction footprint (`prompt + output + thinking`). |
+| 18 | `conforming` | Integer | `1` | Conformance status (`1`=Conforming, `0`=Defect). |
+| 19 | `rework_cycles` | Integer | `0` | Number of reflection prompts dispatched ($P$). |
+| 20 | `finish_reason` | String | `STOP` | Provider finish reason (`STOP`, `MAX_TOKENS`, etc.). |
+| 21 | `cycle_time_sec` | Float | `6.4215` | **Primary Response ($Y$):** Cycle time in seconds. |
+| 22 | `assignable_cause` | String | `NONE` | Special cause annotation (`NONE` if in-control). |
 
 ---
 
