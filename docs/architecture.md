@@ -220,7 +220,10 @@ $$\mathbf{prompt\_tokens}_{\text{ (API Ground Truth)}} = \mathbf{context\_tokens
 5. **`rework_tokens` ($W_{\text{rework}}$ Rework Overhead):** Additional input tokens injected during dynamic reflection rework loops ($P_{\text{final}} - P_0$). Equals $0$ when conforming on the first attempt.
 6. **`prompt_tokens` ($W_{\text{in}}$ Total Input Load):** Direct API telemetry from `response.usage_metadata.prompt_token_count` on the final accepted attempt.
 7. **`output_tokens` ($O$ Generation Yield):** Direct API telemetry from `response.usage_metadata.candidates_token_count` of the accepted output.
-8. **`total_tokens` ($W_{\text{total}}$ System Footprint):** $\mathbf{prompt\_tokens} + \mathbf{output\_tokens}$.
+8. **`thinking_tokens` ($T$ Model Reasoning Effort):** Cumulative internal reasoning/thinking tokens generated across all attempts in the run.
+9. **`total_tokens` ($W_{\text{total}}$ System Footprint):** $\mathbf{prompt\_tokens} + \mathbf{output\_tokens} + \mathbf{thinking\_tokens}$.
+
+> For exhaustive mathematical derivation, boundary token preemption, and the lifecycle distinction between live chat and persisted cache, see the dedicated [**Token Accounting & Lifecycle Specification**](token_accounting.md).
 
 ---
 

@@ -13,6 +13,7 @@ The following core documents provide complete specifications, operating instruct
 | [**Quick Start Guide**](quickstart.md) | Rapid onboarding, prerequisites, environment setup, and executing your first run in under 5 minutes. | All Users & New Operators |
 | [**System Architecture**](architecture.md) | Detailed architectural breakdown, theoretical formalization ($S = (C,R,I,O,F)$), transfer function, Shewhart I-MR mechanics, subsystem design, and token accounting invariants. | Software Engineers, Data Scientists, & System Architects |
 | [**Operator & Reference Manual**](manual.md) | Exhaustive CLI command reference (`run`, `status`, `slice`, `rebuild-cache`), 4-phase experimental protocols, deterministic quality gate rules, offline mock simulation, and troubleshooting. | Daily Operators, Quality Analysts, & Researchers |
+| [**Token Accounting & Lifecycle**](token_accounting.md) | Formal token decomposition equations, boundary framing ($\epsilon$), EOS preemption, and thinking tokens lifecycle (live chat vs. persistence). | Statistical Analysts, System Architects, & Researchers |
 | [**Google Sheets Webhook Setup**](spreadsheet_webhook_setup.md) | Step-by-step setup guide for configuring real-time telemetry streaming to Google Sheets via Google Apps Script. | DevOps, System Administrators, & Operators |
 
 ---
