@@ -11,6 +11,34 @@ from src.engine.mock_responses import (
 )
 
 
+def _extract_text(item: Any) -> str:
+    """Extract plain text from turn dictionary, Content, or part structure."""
+    if isinstance(item, str):
+        return item
+    if isinstance(item, dict):
+        parts = item.get("parts")
+        if isinstance(parts, list):
+            return " ".join(str(p.get("text", "") if isinstance(p, dict) else getattr(p, "text", p)) for p in parts)
+        return str(item.get("text", ""))
+    return str(getattr(item, "text", item or ""))
+
+
+def _estimate_tokens(text: str) -> int:
+    """Estimate token count based on standard word-to-token ratio (~4/3)."""
+    words = len(text.split())
+    return max(1, words * 4 // 3) if words > 0 else 0
+
+
+def _count_turn_tokens(turn: Any) -> int:
+    """Calculate token count for a turn, including request framing for user turns."""
+    text = _extract_text(turn)
+    t = _estimate_tokens(text)
+    if t == 0:
+        return 0
+    role = turn.get("role", "") if isinstance(turn, dict) else ""
+    return t + 18 if role == "user" else t
+
+
 class MockUsageMetadata:
     """Mock usage metadata container matching Google GenAI SDK interface."""
 
@@ -23,14 +51,7 @@ class MockUsageMetadata:
 class MockResponse:
     """Mock LLM response payload."""
 
-    def __init__(
-        self,
-        text: str,
-        prompt_tokens: int,
-        output_tokens: int,
-        finish_reason: str = "STOP",
-        model_version: str = "gemini-2.5-flash-mock",
-    ) -> None:
+    def __init__(self, text: str, prompt_tokens: int, output_tokens: int, finish_reason: str = "STOP", model_version: str = "gemini-2.5-flash-mock") -> None:
         self.text = text
         self.usage_metadata = MockUsageMetadata(prompt_tokens, output_tokens)
         self.finish_reason = finish_reason
@@ -40,12 +61,7 @@ class MockResponse:
 class MockGeminiChat:
     """Mock chat session simulating multi-turn state and rework iterations."""
 
-    def __init__(
-        self,
-        scenario: str = "rework",
-        raw_history: list[dict[str, Any]] | None = None,
-        model_name: str = "gemini-2.5-flash-mock",
-    ) -> None:
+    def __init__(self, scenario: str = "rework", raw_history: list[dict[str, Any]] | None = None, model_name: str = "gemini-2.5-flash-mock") -> None:
         self.scenario = scenario
         self.history: list[dict[str, Any]] = list(raw_history) if raw_history else []
         self.turn_count = 0
@@ -54,29 +70,27 @@ class MockGeminiChat:
     def send_message(self, prompt: str) -> MockResponse:
         """Emits staged response depending on scenario and retry iteration."""
         self.turn_count += 1
-        is_rework = "QUALITY GATE" in prompt
-
-        if is_rework:
+        if "QUALITY GATE" in prompt:
             if self.scenario == "fail":
                 resp_text = MISSING_HEADER_MARKDOWN
             elif self.scenario == "latex" and "NONE RECORDED" not in prompt:
                 resp_text = CONFORMING_MARKDOWN
             else:
                 resp_text = EMPTY_RULE_CONFORMING_MARKDOWN
-        elif self.scenario == "pass":
-            resp_text = EMPTY_RULE_CONFORMING_MARKDOWN
-        elif self.scenario == "fail":
-            resp_text = MISSING_HEADER_MARKDOWN
-        elif self.scenario == "latex":
-            resp_text = UNCLOSED_LATEX_MARKDOWN
-        elif self.scenario == "empty_math":
-            resp_text = MISSING_EMPTY_RULE_MARKDOWN
-        else:  # default 'rework'
-            resp_text = MISSING_HEADER_MARKDOWN
+        else:
+            scenario_map = {
+                "pass": EMPTY_RULE_CONFORMING_MARKDOWN,
+                "fail": MISSING_HEADER_MARKDOWN,
+                "latex": UNCLOSED_LATEX_MARKDOWN,
+                "empty_math": MISSING_EMPTY_RULE_MARKDOWN,
+            }
+            resp_text = scenario_map.get(self.scenario, MISSING_HEADER_MARKDOWN)
 
-        hist_tokens = len(self.history) * 260
-        p_tokens = hist_tokens + 550 + (self.turn_count * 50)
-        o_tokens = 220 + (self.turn_count * 40)
+        hist_tokens = sum(_count_turn_tokens(i) for i in self.history)
+        new_prompt_tokens = _estimate_tokens(prompt) + 18
+        p_tokens = hist_tokens + new_prompt_tokens
+        o_tokens = max(1, _estimate_tokens(resp_text))
+
         self.history.append({"role": "user", "parts": [{"text": prompt}]})
         self.history.append({"role": "model", "parts": [{"text": resp_text}]})
         return MockResponse(resp_text, p_tokens, o_tokens, model_version=self.model_name)
@@ -120,10 +134,9 @@ class MockGeminiClient:
         return response.text, tokens
 
     def count_tokens(self, contents: Any) -> int:
-        """Deterministic token counter matching mock text density."""
+        """Deterministic token counter matching text density and turn structure."""
         if not contents:
             return 0
         if isinstance(contents, list):
-            return len(contents) * 260
-        text = str(contents)
-        return max(1, len(text.split()) * 4 // 3)
+            return sum(_count_turn_tokens(item) for item in contents)
+        return _estimate_tokens(_extract_text(contents))

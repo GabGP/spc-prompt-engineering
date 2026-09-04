@@ -88,5 +88,14 @@ def test_mock_client_count_tokens() -> None:
     assert client.count_tokens("") == 0
     assert client.count_tokens([]) == 0
     assert client.count_tokens("one two three four") == 5
-    history = [{"parts": [{"text": "one two"}]}, {"parts": [{"text": "three four"}]}]
-    assert client.count_tokens(history) == 520
+    class Dummy:
+        text = "dummy object text"
+    assert client.count_tokens(Dummy()) == 4
+    assert client.count_tokens({"text": "hello world"}) == 2
+    assert client.count_tokens([{"text": ""}]) == 0
+    history = [
+        {"role": "user", "parts": [{"text": "one two"}]},
+        {"role": "model", "parts": [{"text": "three four"}]},
+        "five six",
+    ]
+    assert client.count_tokens(history) == 24

@@ -118,9 +118,14 @@ def test_executor_rework_reflection_loop_recovery(tmp_path: Path) -> None:
     assert result.record.rework_cycles == 1
     assert result.record.conforming == 1
     assert result.record.prompt_tokens == 600  # prompt tokens of final accepted iteration
-    assert result.record.output_tokens == 350  # 150 + 200
-    assert result.record.total_tokens == 950
+    assert result.record.output_tokens == 250  # output tokens of final accepted response
+    assert result.record.rework_tokens == 200  # 600 - 400
+    assert result.record.total_tokens == 850
     assert len(result.audit_payload.inspection_events) == 2
+    assert len(result.audit_payload.iterations) == 2
+    assert result.audit_payload.cumulative_tokens["total_api_prompt_tokens"] == 1000
+    assert result.audit_payload.cumulative_tokens["total_api_output_tokens"] == 350
+    assert result.audit_payload.cumulative_tokens["total_api_tokens"] == 1350
 
 
 def test_executor_exceeding_max_reworks(tmp_path: Path) -> None:
@@ -135,13 +140,14 @@ def test_executor_exceeding_max_reworks(tmp_path: Path) -> None:
         {"prompt_tokens": 200, "output_tokens": 50},
     )
 
+    session_cache = tmp_path / ".cache.json"
     executor = TransformationExecutor(
         gemini_client=mock_gemini,
         csv_logger=CSVLogger(log_path=tmp_path / "log.csv"),
         audit_logger=AuditLogger(
             logs_dir=tmp_path / "logs", outputs_dir=tmp_path / "outputs"
         ),
-        session_manager=SessionManager(cache_path=tmp_path / ".cache.json"),
+        session_manager=SessionManager(cache_path=session_cache),
     )
 
     result = executor.execute_run(
@@ -158,6 +164,8 @@ def test_executor_exceeding_max_reworks(tmp_path: Path) -> None:
     assert result.record.conforming == 0
     assert result.record.rework_cycles == 2
     assert not result.defect_report.is_conforming
+    assert result.record.assignable_cause == "REWORK_LIMIT_EXCEEDED"
+    assert not session_cache.exists()
 
 
 def test_executor_token_fallback_calculation(tmp_path: Path) -> None:
