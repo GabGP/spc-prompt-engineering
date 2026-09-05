@@ -109,7 +109,7 @@ pytest
 ```
 Expected output:
 ```text
-============================= 115 passed in 2.80s =============================
+============================= 132 passed in 2.80s =============================
 Required test coverage of 80% reached. Total coverage: 100.00%
 ```
 
@@ -118,7 +118,7 @@ Required test coverage of 80% reached. Total coverage: 100.00%
 ## 4. The 3-Step Operational Workflow
 
 ### Step 1: Prepare Input Material (`spc slice`)
-The SPC transformation process uses standardized textbook PDF pages as input units to ensure uniform token sizes ($\pm 10\%$).
+The SPC transformation process uses standardized textbook PDF pages as input units to ensure uniform token sizes (± 10%).
 
 1. Place your source textbook PDF in `data/raw/` (e.g. `data/raw/textbook.pdf`).
 2. Slice the desired page range (e.g., pages 1 through 30):
@@ -156,15 +156,15 @@ spc run
 
 What happens under the hood during `spc run`:
 1. **Input Resolution:** Automatically selects the next uncompleted page from `data/inputs/`.
-2. **Phase & Factor Binding:** Determines $X_1$ (Session state) and $X_2$ (Schema injection).
+2. **Phase & Factor Binding:** Determines `X₁` (Session state) and `X₂` (Schema injection).
 3. **LLM Transformation:** Sends the prompt payload to Gemini and starts a high-precision wall-clock timer.
 4. **Deterministic Inspection Gate:** Evaluates the output against 3 strict rules:
    - Mandatory level-2 headers (`## Core Synthesis`, `## Technical Taxonomy`, `## Analytical Formulations`).
    - LaTeX syntax closure (all `$$` formula delimiters must be paired).
    - Empty formula handling (must state `NONE RECORDED` if no formulas are in the input).
-5. **Dynamic Reflection Rework:** If defects are detected, an automated corrective reflection prompt is sent back to the model ($P = P + 1$).
+5. **Dynamic Reflection Rework:** If defects are detected, an automated corrective reflection prompt is sent back to the model (`P = P + 1`).
 6. **Telemetry & Ledger Persistence:**
-   - Appends run telemetry to `data/main_event_log.csv`.
+   - Appends run telemetry to `data/main_event_log.csv` (22 standardized metrics).
    - Saves complete JSON audit log to `data/logs/run_XXX_audit.json`.
    - Saves accepted markdown artifact to `data/outputs/run_XXX.md`.
    - Dispatches telemetry to Google Sheets if `SHEET_WEBHOOK_URL` is configured.
@@ -198,7 +198,7 @@ After a run finishes, your artifacts are structured as follows:
 | Path | Description | Tracked in Git |
 | :--- | :--- | :---: |
 | `data/` | Entire runtime directory (inputs, outputs, logs, `main_event_log.csv`) | No (Ignored via `.gitignore`) |
-| `data/main_event_log.csv` | Primary 21-column telemetry ledger | No (Ignored via `.gitignore`) |
+| `data/main_event_log.csv` | Primary 22-column telemetry ledger | No (Ignored via `.gitignore`) |
 | `data/outputs/run_XXX.md` | Accepted structured Markdown artifact | No (Ignored via `.gitignore`) |
 | `data/logs/run_XXX_audit.json` | Forensic audit trail (prompts, timing, rework history) | No (Ignored via `.gitignore`) |
 | `.cache/session_cache.json` | Active multi-turn conversation context buffer | No (Ignored via `.gitignore`) |
@@ -208,5 +208,6 @@ After a run finishes, your artifacts are structured as follows:
 ## 7. Next Steps
 
 * Read the [Operator & Reference Manual](manual.md) for full CLI parameter references, experimental protocols, and troubleshooting.
-* Explore the [Architecture Specification](architecture.md) for mathematical definitions ($S = (C,R,I,O,F)$, token decomposition, I-MR equations).
+* Explore the [Architecture Specification](architecture.md) for mathematical definitions (`S = (C, R, I, O, F)`, token decomposition, I-MR equations).
+* Study the [Token Accounting & Lifecycle Specification](token_accounting.md) for multi-turn token invariants, protocol framing, and thinking tokens management.
 * Set up real-time Google Sheets streaming with the [Google Sheets Webhook Setup Guide](spreadsheet_webhook_setup.md).

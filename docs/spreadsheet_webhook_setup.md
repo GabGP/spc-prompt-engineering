@@ -6,7 +6,7 @@ This guide walks through configuring a Google Sheets webhook endpoint to capture
 
 ## 1. Architectural Overview
 
-During experimental execution (`spc run`), the `TransformationExecutor` passes each finalized `RunRecord` to `WebhookClient.dispatch()`. If `SHEET_WEBHOOK_URL` is set in `.env`, a JSON payload containing all 20 standardized metrics is dispatched via HTTP POST to a Google Apps Script Web App, which appends the row to a Google Sheet.
+During experimental execution (`spc run`), the `TransformationExecutor` passes each finalized `RunRecord` to `WebhookClient.dispatch()`. If `SHEET_WEBHOOK_URL` is set in `.env`, a JSON payload containing all 22 standardized metrics is dispatched via HTTP POST to a Google Apps Script Web App, which appends the row to a Google Sheet.
 
 ```
 [spc run] ──> [TransformationExecutor] ──> [WebhookClient]
