@@ -8,27 +8,31 @@ An empirical research engine combining **Statistical Process Control (SPC)** and
 
 This project models human-LLM interaction as a digital service transformation system:
 
-$$S = (C, R, I, O, F)$$
+```text
+S = (C, R, I, O, F)
+```
 
 We evaluate the governing response transfer function:
 
-$$Y = \alpha_0 + \alpha_1 X_1 + \alpha_2 X_2$$
+```text
+Y = α₀ + α₁·X₁ + α₂·X₂ + ε
+```
 
-* **Primary Response ($Y$):** Transformation Cycle Time ($T$ in seconds), analyzed using Shewhart Individuals–Moving Range (I-MR) control charts.
-* **Controllable Factor 1 ($X_1$ — Context Buffer Management):**
+* **Primary Response (Y):** Transformation Cycle Time (`T` in seconds), analyzed using Shewhart Individuals–Moving Range (I-MR) control charts.
+* **Controllable Factor 1 (X₁ — Context Buffer Management):**
   * `0`: Unbounded accumulation (persistent session, tokens grow across iterations).
   * `1`: Zero-WIP policy (context flushed before each run).
-* **Controllable Factor 2 ($X_2$ — Prompt Engineering & SOP Schema Scaffolding):**
+* **Controllable Factor 2 (X₂ — Prompt Engineering & SOP Schema Scaffolding):**
   * `0`: Bare / ad-hoc prompt without schema constraints.
   * `1`: Standard Operating Procedure (SOP) schema injection (`memory_context.md`).
 * **Deterministic Quality Gate (Go / No-Go):**
-  Outputs are inspected for mandatory structural headers, closed LaTeX `$$` blocks, and a strict `"NONE RECORDED"` empty-formula handling rule. Non-conforming outputs trigger an automated dynamic reflection rework loop ($P = P + 1$).
+  Outputs are inspected for mandatory structural headers, closed LaTeX `$$` blocks, and a strict `"NONE RECORDED"` empty-formula handling rule. Non-conforming outputs trigger an automated dynamic reflection rework loop (`P = P + 1`).
 
 ### Experimental Phases
-1. **Phase I (Baseline Observation):** Sept 2 – Sept 23 ($X_1=0, X_2=0$, unbounded context buffer).
-2. **Phase II (Context Reset Isolation):** Sept 24 – Oct 7 ($X_1=1, X_2=0$, daily session reset).
-3. **Phase III (SOP Schema Injection):** Oct 8 – Oct 21 ($X_1=1, X_2=1$, clean reset + prompt schema).
-4. **Phase IV (Process Capability & Packaging):** Oct 22 – Nov 2 ($C_p, C_{pk}, P_p, P_{pk}$ & OLS model fit).
+1. **Phase I (Baseline Observation):** Sept 2 – Sept 23 (`X₁=0, X₂=0`, unbounded context buffer).
+2. **Phase II (Context Reset Isolation):** Sept 24 – Oct 7 (`X₁=1, X₂=0`, daily session reset).
+3. **Phase III (SOP Schema Injection):** Oct 8 – Oct 21 (`X₁=1, X₂=1`, clean reset + prompt schema).
+4. **Phase IV (Process Capability & Packaging):** Oct 22 – Nov 2 (`Cp, Cpk, Pp, Ppk` & OLS model fit).
 
 ---
 
@@ -134,7 +138,8 @@ Comprehensive documentation and operator manuals are available in the [`docs/`](
 
 * [**Documentation Hub (`docs/README.md`)**](docs/README.md): Index, persona-based reading paths, and cheat sheet.
 * [**Quick Start Guide (`docs/quickstart.md`)**](docs/quickstart.md): 5-minute setup, configuration, and first execution.
-* [**System Architecture (`docs/architecture.md`)**](docs/architecture.md): Formalization $S = (C,R,I,O,F)$, token invariants, Shewhart I-MR mechanics, and subsystem design.
+* [**System Architecture (`docs/architecture.md`)**](docs/architecture.md): Formalization `S = (C, R, I, O, F)`, token invariants, Shewhart I-MR mechanics, and subsystem design.
+* [**Token Accounting & Lifecycle (`docs/token_accounting.md`)**](docs/token_accounting.md): Multi-turn token decomposition equations, protocol framing (ε), EOS preemption, and thinking tokens lifecycle.
 * [**Operator & Reference Manual (`docs/manual.md`)**](docs/manual.md): Complete CLI reference, 4-phase protocols, quality gates, and troubleshooting.
 * [**Google Sheets Webhook Setup (`docs/spreadsheet_webhook_setup.md`)**](docs/spreadsheet_webhook_setup.md): Real-time cloud streaming guide.
 
@@ -153,7 +158,7 @@ Comprehensive documentation and operator manuals are available in the [`docs/`](
 spc-prompt-engineering/
 ├── src/                      # Direct source tree (no redundant nested folders)
 │   ├── config.py             # Application settings & environment variables
-│   ├── core/                 # SPC constants, calendar windows, & data models
+│   ├── core/                 # SPC constants, calendar windows, & data models (22 cols)
 │   ├── prompts/              # Prompt engineering templates & reflection loader
 │   ├── validation/           # Deterministic Go / No-Go inspection gates
 │   ├── state/                # Calendar date phase resolution & session tracking
