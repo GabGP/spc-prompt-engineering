@@ -10,14 +10,16 @@ This document details the software architecture, statistical formalization, math
 
 Human-LLM interaction is mathematically modeled as a discrete digital service transformation system:
 
-$$S = (C, R, I, O, F)$$
+```text
+S = (C, R, I, O, F)
+```
 
 Where:
-* **Components ($C$):** The client execution environment (local CLI runtime $C_0$) and the Google GenAI LLM inference engine ($C_1$).
-* **Relationships ($R$):** Directed network topology connecting input ingestion, prompt compilation, API dispatch, deterministic quality inspection, dynamic rework loops, and dual persistence sinks.
-* **Inputs ($I$):** Standardized input entities (sliced digital textbook PDF pages) combined with prompt vectors.
-* **Outputs ($O$):** Conforming structured Markdown artifacts conforming to technical schema, and rejected runs routed to rework.
-* **Transformation Function ($F$):** Stochastic mapping $F: I \times X \rightarrow O$, parameterized by the internal state vector $X = (X_1, X_2)$.
+* **Components (C):** The client execution environment (local CLI runtime C₀) and the Google GenAI LLM inference engine (C₁).
+* **Relationships (R):** Directed network topology connecting input ingestion, prompt compilation, API dispatch, deterministic quality inspection, dynamic rework loops, and dual persistence sinks.
+* **Inputs (I):** Standardized input entities (sliced digital textbook PDF pages) combined with prompt vectors.
+* **Outputs (O):** Conforming structured Markdown artifacts adhering to technical schema, and rejected runs routed to rework.
+* **Transformation Function (F):** Stochastic mapping `F: I × X → O`, parameterized by the internal state vector `X = (X₁, X₂)`.
 
 ---
 
@@ -25,64 +27,84 @@ Where:
 
 The engine empirically isolates and models the governing linear transfer function:
 
-$$Y = \alpha_0 + \alpha_1 X_1 + \alpha_2 X_2 + \epsilon$$
+```text
+Y = α₀ + α₁·X₁ + α₂·X₂ + ε
+```
 
 Where:
-* **$Y$ (Primary Response Variable — Cycle Time $T$, in seconds):** The continuous wall-clock duration from initial API request dispatch until a fully compliant, conforming Markdown artifact is produced (including any inspection and rework reflection cycles).
-* **$X_1$ (Controllable Factor 1 — Context Buffer Management / WIP State):**
-  * $X_1 = 0$: Unbounded accumulation. Conversation history persists across runs, allowing WIP tokens to grow daily.
-  * $X_1 = 1$: Zero-WIP policy. Session context buffer is flushed to an empty state prior to each run.
-* **$X_2$ (Controllable Factor 2 — External Memory / Schema Calibration):**
-  * $X_2 = 0$: Bare ad-hoc prompt (`bare_prompt.md`), providing raw task instructions without structured schema constraints.
-  * $X_2 = 1$: Standard Operating Procedure (SOP) schema injection (`memory_context.md`), prepending taxonomy, formatting specifications, and boundary rules.
-* **$\alpha_0$:** System baseline latency (model warm-up, connection handshake, minimal generation time).
-* **$\alpha_1$:** Context latency coefficient (marginal cycle time per accumulated WIP turn/token).
-* **$\alpha_2$:** Schema latency coefficient (impact of SOP instruction overhead vs. reduced variance/rework).
-* **$\epsilon$:** Stochastic residual error ($\epsilon \sim \mathcal{N}(0, \sigma^2)$).
+* **Y (Primary Response Variable — Cycle Time T, in seconds):** The continuous wall-clock duration from initial API request dispatch until a fully compliant, conforming Markdown artifact is produced (including any inspection and rework reflection cycles).
+* **X₁ (Controllable Factor 1 — Context Buffer Management / WIP State):**
+  * `X₁ = 0`: Unbounded accumulation. Conversation history persists across runs, allowing WIP tokens to grow daily.
+  * `X₁ = 1`: Zero-WIP policy. Session context buffer is flushed to an empty state prior to each run.
+* **X₂ (Controllable Factor 2 — External Memory / Schema Calibration):**
+  * `X₂ = 0`: Bare ad-hoc prompt (`bare_prompt.md`), providing raw task instructions without structured schema constraints.
+  * `X₂ = 1`: Standard Operating Procedure (SOP) schema injection (`memory_context.md`), prepending taxonomy, formatting specifications, and boundary rules.
+* **α₀:** System baseline latency (model warm-up, connection handshake, minimal generation time).
+* **α₁:** Context latency coefficient (marginal cycle time per accumulated WIP turn/token).
+* **α₂:** Schema latency coefficient (impact of SOP instruction overhead vs. reduced variance/rework).
+* **ε:** Stochastic residual error (`ε ~ N(0, σ²)`).
 
 ---
 
 ### 1.3 Statistical Process Control (SPC) Mechanics
 
-To distinguish between **common cause variation** (inherent API latency fluctuations) and **special cause variation** (server throttling, network drops, rework spikes), the continuous primary response variable $Y$ is monitored using **Shewhart Individuals–Moving Range (I-MR) Control Charts** ($n = 2$).
+To distinguish between **common cause variation** (inherent API latency fluctuations) and **special cause variation** (server throttling, network drops, rework spikes), the continuous primary response variable `Y` is monitored using **Shewhart Individuals–Moving Range (I-MR) Control Charts** (subgroup size `n = 2`).
 
-#### 1. Moving Range ($MR$) Calculation
-For consecutive observations $T_i$ and $T_{i-1}$:
+#### 1. Moving Range (MR) Calculation
+For consecutive observations `Tᵢ` and `Tᵢ₋₁`:
 
-$$MR_i = |T_i - T_{i-1}|, \quad \text{for } i = 2, 3, \dots, m$$
+```text
+MRᵢ = |Tᵢ − Tᵢ₋₁|,   for i = 2, 3, ..., m
 
-$$\overline{MR} = \frac{1}{m - 1} \sum_{i=2}^m MR_i$$
+MR̄ = (1 / (m − 1)) · Σ MRᵢ
+```
 
-#### 2. Process Standard Deviation Estimator ($\hat{\sigma}_0$)
-Using the Shewhart unbiasing constant $d_2 = 1.128$ for sample size $n = 2$:
+#### 2. Process Standard Deviation Estimator (σ̂₀)
+Using the Shewhart unbiasing constant `d₂ = 1.128` for sample size `n = 2`:
 
-$$\hat{\sigma}_0 = \frac{\overline{MR}}{d_2} = \frac{\overline{MR}}{1.128}$$
+```text
+σ̂₀ = MR̄ / d₂ = MR̄ / 1.128
+```
 
-#### 3. Control Limits for the Individuals Chart ($I$)
+#### 3. Control Limits for the Individuals Chart (I)
 
-$$\text{Center Line (CL)}_I = \bar{T} = \frac{1}{m} \sum_{i=1}^m T_i$$
+```text
+Center Line (CL_I) = T̄ = (1 / m) · Σ Tᵢ
 
-$$\text{UCL}_I = \bar{T} + 3 \hat{\sigma}_0 = \bar{T} + 3 \left(\frac{\overline{MR}}{1.128}\right) \approx \bar{T} + 2.6596 \cdot \overline{MR}$$
+UCL_I = T̄ + 3·σ̂₀ = T̄ + 3·(MR̄ / 1.128) ≈ T̄ + 2.6596 · MR̄
 
-$$\text{LCL}_I = \max\left(0, \, \bar{T} - 3 \hat{\sigma}_0\right) = \max\left(0, \, \bar{T} - 2.6596 \cdot \overline{MR}\right)$$
+LCL_I = max(0, T̄ − 3·σ̂₀) = max(0, T̄ − 2.6596 · MR̄)
+```
 
-#### 4. Control Limits for the Moving Range Chart ($MR$)
-Using Shewhart constants $D_3 = 0.0$ and $D_4 = 3.267$ for $n = 2$:
+#### 4. Control Limits for the Moving Range Chart (MR)
+Using Shewhart constants `D₃ = 0.0` and `D₄ = 3.267` for `n = 2`:
 
-$$\text{CL}_{MR} = \overline{MR}$$
+```text
+CL_MR  = MR̄
 
-$$\text{UCL}_{MR} = D_4 \cdot \overline{MR} = 3.267 \cdot \overline{MR}$$
+UCL_MR = D₄ · MR̄ = 3.267 · MR̄
 
-$$\text{LCL}_{MR} = D_3 \cdot \overline{MR} = 0$$
+LCL_MR = D₃ · MR̄ = 0
+```
 
 #### 5. Process Capability & Performance Indices (Phase IV)
-When upper specification limit ($USL$) and lower specification limit ($LSL$) are defined:
+When upper specification limit (`USL`) and lower specification limit (`LSL`) are defined:
 
-$$C_p = \frac{USL - LSL}{6 \hat{\sigma}_0}, \quad C_{pk} = \min\left(\frac{USL - \bar{T}}{3 \hat{\sigma}_0}, \, \frac{\bar{T} - LSL}{3 \hat{\sigma}_0}\right)$$
+```text
+Cₚ  = (USL − LSL) / (6·σ̂₀)
 
-$$P_p = \frac{USL - LSL}{6 s}, \quad P_{pk} = \min\left(\frac{USL - \bar{T}}{3 s}, \, \frac{\bar{T} - LSL}{3 s}\right)$$
+Cₚₖ = min((USL − T̄) / (3·σ̂₀),  (T̄ − LSL) / (3·σ̂₀))
 
-Where $s$ is the overall sample standard deviation: $s = \sqrt{\frac{1}{m-1} \sum_{i=1}^m (T_i - \bar{T})^2}$.
+Pₚ  = (USL − LSL) / (6·s)
+
+Pₚₖ = min((USL − T̄) / (3·s),     (T̄ − LSL) / (3·s))
+```
+
+Where `s` is the overall sample standard deviation:
+
+```text
+s = sqrt((1 / (m − 1)) · Σ(Tᵢ − T̄)²)
+```
 
 ---
 
@@ -155,7 +177,7 @@ src/
 ├── config.py              # Application settings, directories, Pydantic BaseSettings
 ├── core/
 │   ├── constants.py       # Calendar windows, Phase enum, SPC constants, Gate rules
-│   └── models.py          # Pydantic data schemas: RunRecord, DefectReport, AuditPayload
+│   └── models.py          # Pydantic schemas: RunRecord (22 cols), DefectReport, AuditPayload
 ├── state/
 │   ├── phase_resolver.py  # Evaluates date against calendar windows to determine (X1, X2)
 │   ├── run_tracker.py     # Discovers run IDs and historical counts from CSV
@@ -179,7 +201,7 @@ src/
 │   ├── rules.py           # Pure deterministic regex inspection functions
 │   └── inspector.py       # QualityInspector running the 3 Go/No-Go inspection gates
 ├── persistence/
-│   ├── csv_logger.py      # Appends RunRecord to data/main_event_log.csv (21 columns)
+│   ├── csv_logger.py      # Appends RunRecord to data/main_event_log.csv (22 columns)
 │   ├── audit_logger.py    # Writes forensic JSON audits and accepted markdown outputs
 │   └── webhook_client.py  # Real-time HTTP POST dispatcher to Google Apps Script
 └── ui/
@@ -187,7 +209,9 @@ src/
     ├── handlers.py        # Business handlers executing CLI commands
     ├── views.py           # Rich terminal cards, banners, inspection badges, and tables
     ├── progress.py        # Rich progress bar factory for PDF slicing
-    └── slice_handler.py   # Dedicated handler for slicing source textbooks
+    ├── slice_handler.py   # Dedicated handler for slicing source textbooks
+    ├── error_view.py      # Clean user error formatting
+    └── status_helper.py   # Status aggregation and diagnostic helpers
 ```
 
 ---
@@ -196,9 +220,11 @@ src/
 
 ### 4.1 Token Invariants & Mathematical Decomposition
 
-In LLM multi-turn interactions, input tokens are not monolithic. The engine formalizes token accounting into 7 distinct metrics, maintaining mathematical invariance:
+In LLM multi-turn interactions, input tokens are not monolithic. The engine formalizes token accounting into 9 distinct metrics, maintaining mathematical invariance:
 
-$$\mathbf{prompt\_tokens}_{\text{ (API Ground Truth)}} = \mathbf{context\_tokens} + \mathbf{instruction\_tokens} + \mathbf{page\_tokens} + \mathbf{rework\_tokens} + \boldsymbol{\epsilon}_{\text{framing}}$$
+```text
+prompt_tokens = context_tokens + instruction_tokens + page_tokens + rework_tokens + framing_tokens
+```
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -208,22 +234,24 @@ $$\mathbf{prompt\_tokens}_{\text{ (API Ground Truth)}} = \mathbf{context\_tokens
 ├──────────────────────┼─────────────────────────┼──────────────────────┼────────────────┼───────────────┤
 │ • Factor X₁          │ • Factor X₂             │ • Input Material (I) │ • Rework loop  │ • Role tags   │
 │ • Full past history  │ • Bare Prompt (~20 t)   │ • Sliced PDF text    │   overhead     │ • Boundaries  │
-│ • 0 in Phase II/III  │ • SOP Schema (~380 t)   │   (~300–600 tokens)  │ • 0 if Pass #0 │   (~15–25 t)  │
+│ • 0 in Phase II–IV   │ • SOP Schema (~380 t)   │   (~300–600 tokens)  │ • 0 if Pass #0 │   (~8–20 t)   │
 └──────────────────────┴─────────────────────────┴──────────────────────┴────────────────┴───────────────┘
 ```
 
-1. **`context_tokens` ($X_1$ WIP Buffer):** Tokens residing in conversation history before the run begins. Captured via `client.count_tokens(history)` when $X_1 = 0$, exactly $0$ when $X_1 = 1$.
-2. **`instruction_tokens` ($X_2$ Schema Overhead):** Tokens in the prompt template ($\approx 20$ for Bare Prompt, $\approx 380$ for SOP Schema). Isolates the marginal cost of schema injection.
-3. **`page_tokens` ($I$ Raw Input Material):** Tokens in the isolated raw textbook page text. Serves as a covariate check to verify uniform input size ($\pm 10\%$).
-4. **`framing_tokens` ($\epsilon_{\text{framing}}$ Protocol Overhead):** Provider turn formatting (`<start_of_turn>user`, boundaries). Calculated from the initial turn $P_0$ as:
-   $$\boldsymbol{\epsilon}_{\text{framing}} = \max\left(0, \, P_0 - (\mathbf{context\_tokens} + \mathbf{instruction\_tokens} + \mathbf{page\_tokens})\right)$$
-5. **`rework_tokens` ($W_{\text{rework}}$ Rework Overhead):** Additional input tokens injected during dynamic reflection rework loops ($P_{\text{final}} - P_0$). Equals $0$ when conforming on the first attempt.
-6. **`prompt_tokens` ($W_{\text{in}}$ Total Input Load):** Direct API telemetry from `response.usage_metadata.prompt_token_count` on the final accepted attempt.
-7. **`output_tokens` ($O$ Generation Yield):** Direct API telemetry from `response.usage_metadata.candidates_token_count` of the accepted output.
-8. **`thinking_tokens` ($T$ Model Reasoning Effort):** Cumulative internal reasoning/thinking tokens generated across all attempts in the run.
-9. **`total_tokens` ($W_{\text{total}}$ System Footprint):** $\mathbf{prompt\_tokens} + \mathbf{output\_tokens} + \mathbf{thinking\_tokens}$.
+1. **`context_tokens` (Factor X₁ WIP Buffer):** Tokens residing in conversation history before the run begins. Captured via `client.count_tokens(history)` when `X₁ = 0`, exactly `0` when `X₁ = 1`.
+2. **`instruction_tokens` (Factor X₂ Schema Overhead):** Tokens in the prompt template (≈ 20 for Bare Prompt, ≈ 380 for SOP Schema). Isolates the marginal cost of schema injection.
+3. **`page_tokens` (Input Material I):** Tokens in the isolated raw textbook page text. Serves as a covariate check to verify uniform input size (± 10%).
+4. **`framing_tokens` (Protocol Framing ε):** Provider turn formatting (`<|turn_start|>user`, boundaries). Calculated from the initial turn `P₀` as:
+   ```text
+   framing_tokens = max(0, initial_prompt_tokens − (context_tokens + instruction_tokens + page_tokens))
+   ```
+5. **`rework_tokens` (Remediation Overhead W_rework):** Additional input tokens injected during dynamic reflection rework loops (`final_prompt_tokens − initial_prompt_tokens`). Equals `0` when conforming on the first attempt.
+6. **`prompt_tokens` (Total Input Load W):** Direct API telemetry from `response.usage_metadata.prompt_token_count` on the final accepted attempt.
+7. **`output_tokens` (Generation Yield O):** Direct API telemetry from `response.usage_metadata.candidates_token_count` of the accepted output.
+8. **`thinking_tokens` (Model Reasoning Effort T):** Cumulative internal reasoning/thinking tokens generated across all attempts in the run.
+9. **`total_tokens` (System Transaction Footprint):** Sum of `prompt_tokens + output_tokens + thinking_tokens`.
 
-> For exhaustive mathematical derivation, boundary token preemption, and the lifecycle distinction between live chat and persisted cache, see the dedicated [**Token Accounting & Lifecycle Specification**](token_accounting.md).
+> For exhaustive derivation, boundary token preemption, and the lifecycle distinction between live chat and persisted cache, see the dedicated [**Token Accounting & Lifecycle Specification**](token_accounting.md).
 
 ---
 
@@ -231,12 +259,12 @@ $$\mathbf{prompt\_tokens}_{\text{ (API Ground Truth)}} = \mathbf{context\_tokens
 
 The `SessionManager` governs state persistence across experimental runs:
 
-* **Accumulating Buffer ($X_1 = 0$, Phase I — Option A Multi-Turn Transcript):**
+* **Accumulating Buffer (`X₁ = 0`, Phase I — Multi-Turn Transcript):**
   - Following each conforming transformation, the full conversation transcript (including any intermediate defective drafts and rework reflection prompts) is appended to `.cache/session_cache.json`.
   - To prevent accidental state loss, every write is mirrored atomically to `.cache/session_cache.bak`.
   - If a run exhausts all rework attempts and fails, defective outputs are **not** committed to the session cache, preventing context corruption.
   - In the event of cache corruption, `SessionManager.rebuild_from_audit_logs()` automatically reconstructs the exact multi-turn conversation from forensic JSON audit files in `data/logs/`.
-* **Zero-WIP Policy ($X_1 = 1$, Phases II–IV):**
+* **Zero-WIP Policy (`X₁ = 1`, Phases II–IV):**
   - The context buffer is cleared before each run.
   - History passed to `GeminiClient.create_chat()` is empty (`[]`).
   - `context_tokens` is recorded as `0`.
@@ -264,8 +292,8 @@ When an output breaches any gate:
    {defect_bullets}
    Please correct these exact issues and regenerate the full response.
    ```
-4. The rework prompt is dispatched within the active chat session, incrementing the rework counter: $P = P + 1$.
-5. The timer continues running, capturing the true cost of non-conformance in the primary cycle time metric $Y$.
+4. The rework prompt is dispatched within the active chat session, incrementing the rework counter: `P = P + 1`.
+5. The timer continues running, capturing the true cost of non-conformance in the primary cycle time metric `Y`.
 
 ---
 
@@ -297,6 +325,6 @@ Every transformation run commits telemetry to three synchronized persistence tie
 ## 8. Git Hygiene & Experimental Integrity
 
 To maintain repository cleanliness and protect proprietary input data:
-* **Tracked Assets:** Production code (`src/`), test suite (`tests/`), configuration docs (`docs/`), environment template (`.env.example`), and project packaging (`pyproject.toml`).
+* **Tracked Assets:** Production code (`src/`), test suite (`tests/`), documentation (`docs/`, `README.md`), environment template (`.env.example`), and project packaging (`pyproject.toml`).
 * **Ignored Artifacts:** The entire `data/` directory is ignored by Git (`.gitignore`), encompassing raw textbook source PDFs (`data/raw/`), sliced input pages (`data/inputs/`), generated markdown outputs (`data/outputs/`), forensic audit logs (`data/logs/`), and primary event ledger (`data/main_event_log.csv`). Local caches (`.cache/`), environment secrets (`.env`).
 * **Zero Hardcoded Secrets:** No personal identifiers, API keys, or webhook endpoints exist in source code.

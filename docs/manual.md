@@ -24,7 +24,7 @@ The engine organizes runtime data into dedicated directories:
 * `data/inputs/`: Holds sliced 1-indexed target page PDFs (`page_001.pdf`, `page_002.pdf`, ...).
 * `data/outputs/`: Holds accepted transformation Markdown files (`run_001.md`, ...).
 * `data/logs/`: Holds full forensic JSON audit payloads (`run_001_audit.json`, ...).
-* `data/main_event_log.csv`: Primary 21-column CSV ledger tracking all runs.
+* `data/main_event_log.csv`: Primary 22-column CSV ledger tracking all runs.
 * `.cache/`: Local cache directory storing active multi-turn conversation sessions.
 
 ---
@@ -54,7 +54,7 @@ spc status
 * **Total Runs Completed:** Count of executed runs in `data/main_event_log.csv`.
 * **Next Target Run ID:** Sequential identifier for the next execution.
 * **Active Cache Turns:** Current conversation turns and estimated token load in memory.
-* **Last Logged Run Summary:** Brief summary of the most recent run (ID, phase, cycle time $T$, conformance, rework count).
+* **Last Logged Run Summary:** Brief summary of the most recent run (ID, phase, cycle time T, conformance, rework count).
 
 ---
 
@@ -191,35 +191,37 @@ The research experiment runs across four calendar phases. Operators must adhere 
 Sept 2 – Sept 23             Sept 24 – Oct 7              Oct 8 – Oct 21               Oct 22 – Nov 2
 X1 = 0, X2 = 0               X1 = 1, X2 = 0               X1 = 1, X2 = 1               X1 = 1, X2 = 1
 Accumulating WIP Session     Zero-WIP Daily Reset         Zero-WIP + SOP Memory        Freeze Limits & OLS Fit
-Target: m = 22 runs          Target: m = 14 runs          Target: m = 14 runs          Model Fit: Y = a0 + a1X1 + a2X2
+Target: m = 22 runs          Target: m = 14 runs          Target: m = 14 runs          Model Fit: Y = α₀ + α₁·X₁ + α₂·X₂ + ε
 ```
 
-### Phase I: Baseline Observation ($X_1 = 0, X_2 = 0$)
+### Phase I: Baseline Observation (X₁ = 0, X₂ = 0)
 * **Calendar Window:** September 2 – September 23, 2026.
-* **Factor Settings:** Context Buffer accumulating ($X_1 = 0$), Bare prompt template ($X_2 = 0$).
+* **Factor Settings:** Context Buffer accumulating (`X₁ = 0`), Bare prompt template (`X₂ = 0`).
 * **Execution Rule:** Execute exactly 1 run per scheduled unit.
 * **Context State:** **DO NOT** delete `.cache/session_cache.json`. The session buffer must grow naturally with each run to measure context bloat latency.
-* **Target Sample Size:** $m = 22$ runs to compute baseline Shewhart control limits ($UCL_I, LCL_I, UCL_{MR}$).
+* **Target Sample Size:** `m = 22` runs to compute baseline Shewhart control limits (`UCL_I, LCL_I, UCL_MR`).
 
-### Phase II: Context Reset Isolation ($X_1 = 1, X_2 = 0$)
+### Phase II: Context Reset Isolation (X₁ = 1, X₂ = 0)
 * **Calendar Window:** September 24 – October 7, 2026.
-* **Factor Settings:** Zero-WIP daily session reset ($X_1 = 1$), Bare prompt template ($X_2 = 0$).
+* **Factor Settings:** Zero-WIP daily session reset (`X₁ = 1`), Bare prompt template (`X₂ = 0`).
 * **Execution Rule:** Run context is flushed before every run.
 * **Context State:** `context_tokens` is strictly 0.
 
-### Phase III: SOP Schema Injection ($X_1 = 1, X_2 = 1$)
+### Phase III: SOP Schema Injection (X₁ = 1, X₂ = 1)
 * **Calendar Window:** October 8 – October 21, 2026.
-* **Factor Settings:** Zero-WIP reset ($X_1 = 1$), SOP Schema injection ($X_2 = 1$).
+* **Factor Settings:** Zero-WIP reset (`X₁ = 1`), SOP Schema injection (`X₂ = 1`).
 * **Execution Rule:** Prepend `memory_context.md` to establish standard terminology, formatting constraints, and error boundaries.
 * **Objective:** Evaluate interaction effect on cycle time variance and rework reduction.
 
-### Phase IV: Process Capability & Regression Analysis ($X_1 = 1, X_2 = 1$)
+### Phase IV: Process Capability & Regression Analysis (X₁ = 1, X₂ = 1)
 * **Calendar Window:** October 22 – November 2, 2026.
 * **Analysis Deliverable:**
   - Freeze Shewhart control limits based on Phase III in-control data.
-  - Compute Process Capability ($C_p, C_{pk}$) and Performance ($P_p, P_{pk}$) against customer latency targets.
+  - Compute Process Capability (`Cp, Cpk`) and Performance (`Pp, Ppk`) against customer latency targets.
   - Fit Ordinary Least Squares (OLS) response transfer function:
-    $$Y = \alpha_0 + \alpha_1 X_1 + \alpha_2 X_2$$
+    ```text
+    Y = α₀ + α₁·X₁ + α₂·X₂ + ε
+    ```
 
 ---
 
@@ -263,7 +265,7 @@ If an output fails any rule:
 2. Detailed diagnostic bullets are compiled.
 3. The engine generates a reflection prompt detailing the exact deficiency.
 4. Gemini is asked to regenerate the full document.
-5. If the document passes on a subsequent iteration, the final output is saved, and the rework count ($P$) is logged in the CSV ledger.
+5. If the document passes on a subsequent iteration, the final output is saved, and the rework count (`P`) is logged in the CSV ledger.
 
 ---
 
@@ -273,7 +275,7 @@ The CSV ledger at `data/main_event_log.csv` records 22 standardized columns:
 
 | Col # | Field Name | Type | Example | Description |
 | :-: | :--- | :---: | :--- | :--- |
-| 1 | `run_id` | Integer | `1` | Sequential run identifier ($1, 2, \dots$). |
+| 1 | `run_id` | Integer | `1` | Sequential run identifier (1, 2, ...). |
 | 2 | `timestamp` | ISO-8601 | `2026-09-03T14:24:00.123456-06:00` | Local ISO-8601 timestamp with timezone offset. |
 | 3 | `phase` | String | `Phase_I` | Active calendar phase. |
 | 4 | `operator` | String | `analyst_1` | Operator conducting the transformation. |
@@ -282,18 +284,18 @@ The CSV ledger at `data/main_event_log.csv` records 22 standardized columns:
 | 7 | `factor_x1` | Integer | `0` | Context Buffer: `0`=Accumulating, `1`=Reset. |
 | 8 | `factor_x2` | Integer | `0` | Prompt Schema: `0`=Bare, `1`=SOP Schema. |
 | 9 | `context_tokens` | Integer | `3410` | Backlog WIP tokens from prior turns. |
-| 10 | `instruction_tokens` | Integer | `32` | Prompt template tokens ($\approx 32$ Bare, $\approx 380$ SOP). |
+| 10 | `instruction_tokens` | Integer | `32` | Prompt template tokens (≈ 20 Bare, ≈ 380 SOP). |
 | 11 | `page_tokens` | Integer | `465` | Raw textbook page text tokens. |
-| 12 | `framing_tokens` | Integer | `18` | Pure protocol framing & delimiter tokens ($\epsilon$). |
-| 13 | `rework_tokens` | Integer | `0` | Input tokens added by rework loops ($0$ if first-pass conforming). |
+| 12 | `framing_tokens` | Integer | `18` | Pure protocol framing & delimiter tokens (ε). |
+| 13 | `rework_tokens` | Integer | `0` | Input tokens added by rework loops (0 if first-pass conforming). |
 | 14 | `prompt_tokens` | Integer | `3925` | Total forward-pass API input tokens of the final attempt. |
 | 15 | `output_tokens` | Integer | `280` | Generated response candidate tokens for the accepted output. |
 | 16 | `thinking_tokens` | Integer | `142` | Cumulative model reasoning/thinking tokens across all attempts in run. |
 | 17 | `total_tokens` | Integer | `4347` | Total transaction footprint (`prompt + output + thinking`). |
 | 18 | `conforming` | Integer | `1` | Conformance status (`1`=Conforming, `0`=Defect). |
-| 19 | `rework_cycles` | Integer | `0` | Number of reflection prompts dispatched ($P$). |
+| 19 | `rework_cycles` | Integer | `0` | Number of reflection prompts dispatched (P). |
 | 20 | `finish_reason` | String | `STOP` | Provider finish reason (`STOP`, `MAX_TOKENS`, etc.). |
-| 21 | `cycle_time_sec` | Float | `6.4215` | **Primary Response ($Y$):** Cycle time in seconds. |
+| 21 | `cycle_time_sec` | Float | `6.4215` | **Primary Response (Y):** Cycle time in seconds. |
 | 22 | `assignable_cause` | String | `NONE` | Special cause annotation (`NONE` if in-control). |
 
 ---
