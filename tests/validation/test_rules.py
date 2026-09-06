@@ -103,3 +103,8 @@ def test_detect_math_in_text() -> None:
     assert detect_math_in_text("Control limits: UCL = X_bar + 3*sigma.")
     assert detect_math_in_text("Variance is Var(X) = E(X^2) - mu^2.")
     assert detect_math_in_text("Equation: $$ x = 42 $$")
+    # Unicode modifier letter circumflex accent (as found in ISLR page 32 / Equation 2.2)
+    assert detect_math_in_text("predict Y using \u02c6Y = \u02c6f(X), (2.2)")
+    assert detect_math_in_text("we define \u02c6f(X) as the estimator")
+    assert detect_math_in_text("see formulation (3.14) for derivation")
+    assert not detect_math_in_text("refer to (Section 2.2) or (see Figure 2.2)")
