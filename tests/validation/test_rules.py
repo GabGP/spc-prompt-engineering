@@ -130,3 +130,14 @@ def test_detect_math_in_text() -> None:
     # Probability and optimization operators
     assert detect_math_in_text("compute Pr(default = Yes | balance)")
     assert detect_math_in_text("solve argmin \u2211 (y_i - f(x_i))^2")
+
+    # LOOCV hat estimator and formula break (ISLR Page 193)
+    assert detect_math_in_text("prediction \u02c6y1 is made for the excluded observation, MSE1 =")
+
+    # High-dimensional & PCA inequalities (ISLR Pages 253, 400)
+    assert detect_math_in_text("Hence n \u226b p, and so the problem")
+    assert detect_math_in_text("first M \u226a p principal components")
+
+    # Inline algebra with Unicode minus sign (ISLR Pages 407, 431)
+    assert detect_math_in_text("there are 2n\u22121 possible reorderings")
+    assert detect_math_in_text("the quantity 1\u2212rij is proportional to distance")

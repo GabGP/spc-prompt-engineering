@@ -67,25 +67,29 @@ def detect_math_in_text(text: str) -> bool:
     the LLM must provide the marker 'NONE RECORDED'.
     """
     patterns = (
-        # 1. Equations/inequalities with Latin/Greek vars, subscripts & hats (e.g. Y = β0 + β1X, X1 ≤ t1)
-        r"[A-Za-z0-9\u02c6\u0300-\u03ff]+\s*[=<>≤≥≈≠∼≡]\s*[-+−]?[0-9A-Za-z\u02c6\u0300-\u03ff\u23a7-\u23a9]+",
-        # 2. Standard LaTeX math commands (e.g. \frac, \sum, \alpha, \beta, \lambda)
+        # 1. Equations/inequalities with Latin/Greek vars, subscripts & hats (e.g. Y = β0 + β1X, X1 ≤ t1, n ≫ p)
+        r"[A-Za-z0-9\u02c6\u0300-\u03ff]+\s*[=<>≤≥≈≠∼≡≪≫]\s*[-+−]?[0-9A-Za-z\u02c6\u0300-\u03ff\u23a7-\u23a9]*",
+        # 2. Variables with mathematical circumflex/hat accent (e.g. ˆy1, ˆβ, ˆμ, ˆY, ˆf)
+        r"\u02c6[A-Za-z]",
+        # 3. Standard LaTeX math commands (e.g. \frac, \sum, \alpha, \beta, \lambda)
         r"\\(frac|sum|int|sqrt|alpha|beta|sigma|mu|lambda|theta|epsilon|gamma|bar)",
-        # 3. Mathematical operators and set notation (e.g. ∑, ∫, ±, √, ∈, ∪, ∩, ∅)
+        # 4. Mathematical operators and set notation (e.g. ∑, ∫, ±, √, ∈, ∪, ∩, ∅)
         r"[∑∫±√∈∉∪∩∅∝∞]",
-        # 4. Standalone Greek letters used as statistical parameters (e.g. α, β, σ², λ, Σ)
+        # 5. Standalone Greek letters used as statistical parameters (e.g. α, β, σ², λ, Σ)
         r"[\u03b1-\u03c9\u0391-\u03a9]",
-        # 5. SPC quality engineering metrics (e.g. UCL, LCL, C_p, C_pk)
+        # 6. SPC quality engineering metrics (e.g. UCL, LCL, C_p, C_pk)
         r"\b(UCL|LCL|C_p|C_pk)\b",
-        # 6. Mathematical functions with optional hats/diacritics (e.g. f(X), ˆf(X), g(x))
+        # 7. Mathematical functions with optional hats/diacritics (e.g. f(X), ˆf(X), g(x))
         r"(?:\b|[^\w\s]|\u02c6)[fgh]\([a-zA-Z0-9_,\s\u02c6\u0300-\u03ff\-+−]+\)",
-        # 7. Probability, expectation & optimization operators (e.g. Var(ε), Pr(Y=1|X), argmin)
+        # 8. Probability, expectation & optimization operators (e.g. Var(ε), Pr(Y=1|X), argmin)
         r"\b(Var|Cov|Corr|MSE|RSS|Pr|Prob|exp|argmin|argmax)\s*\(",
-        # 8. Markdown LaTeX block delimiters ($$)
+        # 9. Markdown LaTeX block delimiters ($$)
         r"\$\$",
-        # 9. Standard textbook equation citations (e.g. (2.2), (3.14))
+        # 10. Standard textbook equation citations (e.g. (2.2), (3.14))
         r"\(\s*\d+\.\d+\s*\)",
-        # 10. Composite not-equal expressions in extracted fonts (e.g. Σ1 ⁄= Σ2)
+        # 11. Composite not-equal expressions in extracted fonts (e.g. Σ1 ⁄= Σ2)
         r"[=<>]\s*⁄=\s*[=<>0-9A-Za-z\u0370-\u03ff]",
+        # 12. Inline algebraic operations with Unicode minus sign (e.g. 1−rij, 2n−1)
+        r"\b[0-9A-Za-z]+[−][0-9A-Za-z]+",
     )
     return bool(re.search("|".join(patterns), text, flags=re.IGNORECASE))
