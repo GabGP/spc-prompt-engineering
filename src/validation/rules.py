@@ -60,15 +60,32 @@ def check_empty_formula_rule(text: str, has_math_in_input: bool = False) -> bool
 
 
 def detect_math_in_text(text: str) -> bool:
-    """Detect presence of analytical formulas or equations in document text."""
+    """Detect analytical formulas, parameters, or equations in document text.
+
+    Enforces deterministic quality gate routing: if math is detected, the LLM
+    must extract equations into '## Analytical Formulations'; if no math exists,
+    the LLM must provide the marker 'NONE RECORDED'.
+    """
     patterns = (
-        r"[A-Za-z\u02c6\u0300-\u036f]+\s*[=<>≤≥≈≠]\s*[-+]?[0-9A-Za-z\u02c6\u0300-\u036f]+",
-        r"\\(frac|sum|int|sqrt|alpha|beta|sigma|mu|bar)",
-        r"[∑∫±√]",
+        # 1. Equations/inequalities with Latin/Greek vars, subscripts & hats (e.g. Y = β0 + β1X, X1 ≤ t1)
+        r"[A-Za-z0-9\u02c6\u0300-\u03ff]+\s*[=<>≤≥≈≠∼≡]\s*[-+−]?[0-9A-Za-z\u02c6\u0300-\u03ff\u23a7-\u23a9]+",
+        # 2. Standard LaTeX math commands (e.g. \frac, \sum, \alpha, \beta, \lambda)
+        r"\\(frac|sum|int|sqrt|alpha|beta|sigma|mu|lambda|theta|epsilon|gamma|bar)",
+        # 3. Mathematical operators and set notation (e.g. ∑, ∫, ±, √, ∈, ∪, ∩, ∅)
+        r"[∑∫±√∈∉∪∩∅∝∞]",
+        # 4. Standalone Greek letters used as statistical parameters (e.g. α, β, σ², λ, Σ)
+        r"[\u03b1-\u03c9\u0391-\u03a9]",
+        # 5. SPC quality engineering metrics (e.g. UCL, LCL, C_p, C_pk)
         r"\b(UCL|LCL|C_p|C_pk)\b",
-        r"(?:\b|[^\w\s]|\u02c6)[fgh]\([a-zA-Z0-9_,\s\u02c6\u0300-\u036f]+\)",
-        r"\b(Var|Cov|Corr|MSE|RSS)\s*\(",
+        # 6. Mathematical functions with optional hats/diacritics (e.g. f(X), ˆf(X), g(x))
+        r"(?:\b|[^\w\s]|\u02c6)[fgh]\([a-zA-Z0-9_,\s\u02c6\u0300-\u03ff\-+−]+\)",
+        # 7. Probability, expectation & optimization operators (e.g. Var(ε), Pr(Y=1|X), argmin)
+        r"\b(Var|Cov|Corr|MSE|RSS|Pr|Prob|exp|argmin|argmax)\s*\(",
+        # 8. Markdown LaTeX block delimiters ($$)
         r"\$\$",
+        # 9. Standard textbook equation citations (e.g. (2.2), (3.14))
         r"\(\s*\d+\.\d+\s*\)",
+        # 10. Composite not-equal expressions in extracted fonts (e.g. Σ1 ⁄= Σ2)
+        r"[=<>]\s*⁄=\s*[=<>0-9A-Za-z\u0370-\u03ff]",
     )
     return bool(re.search("|".join(patterns), text, flags=re.IGNORECASE))

@@ -97,14 +97,36 @@ def test_detect_math_in_text() -> None:
 
     qualitative = "An overview of statistical learning. Tools for understanding data."
     assert not detect_math_in_text(qualitative)
+    assert not detect_math_in_text("refer to (Section 2.2) or (see Figure 2.2)")
+    assert not detect_math_in_text("This chapter is about linear regression, a very simple approach.")
 
+    # Basic algebra & LaTeX
     assert detect_math_in_text("Given Y = f(X) + e, we estimate f.")
     assert detect_math_in_text("The sum is \\sum_{i=1}^n X_i.")
     assert detect_math_in_text("Control limits: UCL = X_bar + 3*sigma.")
     assert detect_math_in_text("Variance is Var(X) = E(X^2) - mu^2.")
     assert detect_math_in_text("Equation: $$ x = 42 $$")
-    # Unicode modifier letter circumflex accent (as found in ISLR page 32 / Equation 2.2)
+
+    # Unicode circumflex hat notation (ISLR Page 32 / Eq 2.2)
     assert detect_math_in_text("predict Y using \u02c6Y = \u02c6f(X), (2.2)")
     assert detect_math_in_text("we define \u02c6f(X) as the estimator")
     assert detect_math_in_text("see formulation (3.14) for derivation")
-    assert not detect_math_in_text("refer to (Section 2.2) or (see Figure 2.2)")
+
+    # Greek parameter estimators (ISLR Page 216 / Page 356)
+    assert detect_math_in_text("i. Y = \u03b20 +\u03b21X +\u03f5")
+    assert detect_math_in_text("f(x\u2217)= \u03b20 +\u03b21x\u22171")
+
+    # Subscripts before inequality operators (ISLR Page 323 / Page 68)
+    assert detect_math_in_text("X1 \u2264 t1 and X2 \u2264 t2")
+    assert detect_math_in_text("X1 = X2 = X3 = 0 using K-nearest neighbors")
+
+    # Set theory & Matrix notation (ISLR Page 401 / Page 165)
+    assert detect_math_in_text("C1 \u222a C2 = {1,...,n}")
+    assert detect_math_in_text("\u03a31 \u2044= \u03a32")
+
+    # Piecewise functions with bracket hooks (ISLR Page 144)
+    assert detect_math_in_text("Y = \n\u23a7 1 if stroke")
+
+    # Probability and optimization operators
+    assert detect_math_in_text("compute Pr(default = Yes | balance)")
+    assert detect_math_in_text("solve argmin \u2211 (y_i - f(x_i))^2")
