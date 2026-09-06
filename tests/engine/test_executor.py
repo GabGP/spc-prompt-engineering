@@ -171,6 +171,47 @@ def test_executor_exceeding_max_reworks(tmp_path: Path) -> None:
     assert not session_cache.exists()
 
 
+def test_executor_exceeding_max_reworks_accumulates_history(tmp_path: Path) -> None:
+    """Verify non-conforming run persists turns in session cache when factor_x1==0."""
+    mock_gemini = MagicMock(spec=GeminiClient)
+    mock_chat = MagicMock()
+    mock_gemini.create_chat.return_value = mock_chat
+
+    mock_gemini.send_prompt.return_value = (
+        NON_CONFORMING_OUTPUT,
+        {"prompt_tokens": 200, "output_tokens": 50},
+    )
+
+    session_cache = tmp_path / ".cache.json"
+    session_mgr = SessionManager(cache_path=session_cache)
+    executor = TransformationExecutor(
+        gemini_client=mock_gemini,
+        csv_logger=CSVLogger(log_path=tmp_path / "log.csv"),
+        audit_logger=AuditLogger(
+            logs_dir=tmp_path / "logs", outputs_dir=tmp_path / "outputs"
+        ),
+        session_manager=session_mgr,
+    )
+
+    result = executor.execute_run(
+        run_id=4,
+        page_text="Content",
+        input_filename="page_004.pdf",
+        phase="Phase_I",
+        factor_x1=0,
+        factor_x2=0,
+        operator="op",
+        max_reworks=2,
+    )
+
+    assert result.record.conforming == 0
+    assert result.record.rework_cycles == 2
+    assert session_cache.exists()
+    history = session_mgr.load_history(factor_x1=0)
+    # Initial attempt (user + model) + 2 reworks (2 * (user + model)) = 6 turns
+    assert len(history) == 6
+
+
 def test_executor_token_fallback_calculation(tmp_path: Path) -> None:
     """Verify fallback token calculation when client has no count_tokens."""
     mock_gemini = MagicMock(spec=[])

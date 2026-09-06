@@ -114,9 +114,8 @@ class TransformationExecutor:
             ])
 
         cycle_time = time.perf_counter() - start_time
-        if defect_report.is_conforming:
-            self.session_manager.save_history(history + turns, factor_x1)
-        elif assignable_cause == "NONE":
+        self.session_manager.save_history(history + turns, factor_x1)
+        if not defect_report.is_conforming and assignable_cause == "NONE":
             assignable_cause = "REWORK_LIMIT_EXCEEDED"
 
         record = TelemetryBuilder.build_run_record(

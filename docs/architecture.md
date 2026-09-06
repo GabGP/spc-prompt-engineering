@@ -260,9 +260,8 @@ prompt_tokens = context_tokens + instruction_tokens + page_tokens + rework_token
 The `SessionManager` governs state persistence across experimental runs:
 
 * **Accumulating Buffer (`X₁ = 0`, Phase I — Multi-Turn Transcript):**
-  - Following each conforming transformation, the full conversation transcript (including any intermediate defective drafts and rework reflection prompts) is appended to `.cache/session_cache.json`.
+  - Following each transformation run, the full conversation transcript (including any intermediate defective drafts and rework reflection prompts) is appended to `.cache/session_cache.json` unconditionally to faithfully model an unmanaged, messy multi-turn chat thread.
   - To prevent accidental state loss, every write is mirrored atomically to `.cache/session_cache.bak`.
-  - If a run exhausts all rework attempts and fails, defective outputs are **not** committed to the session cache, preventing context corruption.
   - In the event of cache corruption, `SessionManager.rebuild_from_audit_logs()` automatically reconstructs the exact multi-turn conversation from forensic JSON audit files in `data/logs/`.
 * **Zero-WIP Policy (`X₁ = 1`, Phases II–IV):**
   - The context buffer is cleared before each run.
